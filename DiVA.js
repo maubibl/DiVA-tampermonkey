@@ -903,7 +903,7 @@ function getCrossrefVol(doi) {
         }
     }
     /**
-     * Funktion för att anropa Crossref och hämta abstract via DOI - kopplad till knapp vid abstract. Funkar ibland och ibland inte...
+     * Funktion för att anropa Crossref och hämta abstract via DOI - kopplad till knapp vid abstract. 
      *
      * @param {string} doi
      *mau
