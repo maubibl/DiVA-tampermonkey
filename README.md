@@ -6,7 +6,7 @@ Hämta information från crossref - uppdaterad: Vilkorat hämtning av förlag s�
 
 Knapp för att hämta abstract från crossref - ny: När automatisk hämtning falerar eller om man vill byta ut det abstract som finns i DiVA.
 
-Fuktionen för att lägga till åäö i annan organisation - uppdaterad med fler orter/organisationer.
+Fuktionen för att uppdatera organisationsnamn där åäö saknas - uppdaterad med fler orter/organisationer.
 
 Funktion som tar bort punkt i slutet av titel/undertitel automatiskt - ny.
 
