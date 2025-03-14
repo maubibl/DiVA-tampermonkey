@@ -1,10 +1,10 @@
-## MAU-modifierad 2025-03-13
+## MAU-modifierad 2025-03-14
 
 De funktiner som ändrats eller lagts till av mau är markerade med *mau i koden. De delar som vi inte använder är bortkommenterade. Allt är inte supertestat och förbättringspotential finns helt säkert...
 
-Hämta information från crossref - uppdaterad: Vilkorat hämtning av förlag så att det bara sker när det inte finns information i förlagsfältet. Även år, vol, issue, pages och article id hämtas automatiskt. Abstract hämtas automatiskt om det inte finns i diva, men kräver ofta att man laddar om sidan av någon anledning (troligen något med iFrames och TinyMCE?).
+Hämta information från crossref - uppdaterad: Vilkorat hämtning av förlag så att det bara sker när det inte finns information i förlagsfältet. Även år, vol, issue, pages och article id hämtas automatiskt. Abstract hämtas automatiskt om det inte finns i diva.
 
-Knapp för att hämta abstract från crossref - ny: När automatisk hämtning falerar eller om man vill byta ut det abstract som finns i DiVA.
+Knapp för att hämta abstract från crossref - ny: Om man vill byta ut det abstract som finns i DiVA.
 
 Fuktionen för att uppdatera organisationsnamn där åäö saknas - uppdaterad med fler orter/organisationer.
 
