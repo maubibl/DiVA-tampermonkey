@@ -780,7 +780,7 @@ var monkey_config = {
      * Funktion för att anropa Crossref och hämta information via DOI
      *
      * @param {string} doi
-     *mau modifierad-  vilkorat så endast hämtar om förlagsinfo inte finns, körs automatiskt - låter omoddad ligga kvar kopplad till knappen.
+      *mau modifierad variant av getCrossref (doi)-  vilkorat så endast hämtar om förlagsinfo inte finns, körs automatiskt - låter omoddad ligga kvar kopplad till knappen.
      */
 
     function getCrossref2(doi) {
@@ -882,11 +882,11 @@ function getCrossrefVol(doi) {
                     $("div.diva2addtextchoicecol:contains('ISBN')").next().find('input').val(isbn); // klistrar in isbn från Crossref FUNKAR BARA OM MAN KLICKAR TVÅ GGR PÅ KNAPPEN ARGH!!
                     $('#monkeyupdates').html('<p style="color:green;">Lagt till ISBN:' + isbn + '</p>' + $('#monkeyupdates').html());
                     }
-                if (concAbs && ($("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html().trim()==="" || $("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html().trim()==="<p><br></p>")) { //om abstract i sektioner i crossref men inget abstract i DiVA
+                if (concAbs && ($("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html().trim()==="" || $("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html().trim()==="<p><br data-mce-bogus=\"1\"></p>")) { //om abstract i sektioner i crossref men inget abstract i DiVA
                     $("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html(concAbs); //klistrar in abstract från crossref
                     $('#monkeyupdates').html('<p style="color:green;">Lagt till abstract</p>' + $('#monkeyupdates').html());
                     }
-                if (!concAbs && abstract && ($("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html().trim()==="" || $("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html().trim()==="<p><br></p>")) { //om abstract i crossref men inte i DiVA
+                if (!concAbs && abstract && ($("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html().trim()==="" || $("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html().trim()==="<p><br data-mce-bogus=\"1\"></p>")) { //om abstract i crossref men inte i DiVA
                    $("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html(abstract); //klistrar in abstract från crossref
                    $('#monkeyupdates').html('<p style="color:green;">Lagt till abstract</p>' + $('#monkeyupdates').html());
                    }
