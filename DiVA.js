@@ -1,6 +1,6 @@
 / ==UserScript==
 // @name     DiVA.mau
-// @version      2.0-general
+// @version      2.1-general
 // @description  En Apa för att hjälpa till med DiVA-arbetet på KTH Biblioteket/Mau
 // @author Thomas Lind, Anders Wändahl. Modifierad för Mau av Per Egevad, Aron Lindhagen
 // @match    https://mau.diva-portal.org/dream/edit/editForm.jsf*
@@ -687,10 +687,11 @@ var monkey_config = {
                                 '<div><span class="fieldtitle">URI: </span><span><a href="' + $(j).find('identifier[type="uri"]').text() + '" target="_blank">' + $(j).find('identifier[type="uri"]').text() + '</a></span></div>' +
                                 //   '<div><span class="fieldtitle">Publiceringsstatus<br/>(artiklar): </span><span>' + $(j).find('note[type="publicationStatus"]').text() + '</span></div>' +
                                 '<div><span class="fieldtitle">Publikationstyp: </span><span>' + $(j).find('genre[authority="diva"][type="publicationType"][lang="swe"]').text() + '</span></div>' +
-                                '<div><span class="fieldtitle">DOI: </span><span>' + $(j).find('identifier[type="doi"]').text() + '</span></div>' +
-                                '<div><span class="fieldtitle">ISI: </span><span>' + $(j).find('identifier[type="isi"]').text() + '</span></div>' +
-                                '<div><span class="fieldtitle">ScopusID: </span><span>' + $(j).find('identifier[type="scopus"]').text() + '</span></div>' +
-                                '<div><span class="fieldtitle">PMID: </span><span>' + $(j).find('identifier[type="pmid"]').text() + '</span></div>' +
+                                '<div><span class="fieldtitle">DOI: </span><span><a href="https://doi.org/' + $(j).find('identifier[type="doi"]').text() + '" target="_blank">' + $(j).find('identifier[type="doi"]').text() + '</a></span></div>' +
+                                '<div><span class="fieldtitle">ISI: </span><span><a href="https://gateway.webofknowledge.com/api/gateway?SrcApp=sfx&KeyUT=' + $(j).find('identifier[type="isi"]').text() + '&DestLinkType=FullRecord&SrcAuth=Name&DestApp=WOS&GWVersion=2" target="_blank">' + $(j).find('identifier[type="isi"]').text() + '</a></span></div>' +
+                                '<div><span class="fieldtitle">ScopusID: </span><span><a href="http://www.scopus.com/record/display.url?origin=inward&partnerID=40&eid=' + $(j).find('identifier[type="scopus"]').text() + '" target="_blank">' + $(j).find('identifier[type="scopus"]').text() + '</a></span></div>' +
+                                '<div><span class="fieldtitle">PMID: </span><span><a href="https://www.ncbi.nlm.nih.gov/pubmed/' + $(j).find('identifier[type="pmid"]').text() + '" target="_blank">' + $(j).find('identifier[type="pmid"]').text() + '</a></span></div>' +
+                                //                            '<div><span class="fieldtitle">Created: </span><span>' + $(j).find('recordCreationDate').text() + '</span></div>' +
                                 //                            '<div><span class="fieldtitle">Created: </span><span>' + $(j).find('recordCreationDate').text() + '</span></div>' +
                                 //                            '<div><span class="fieldtitle">Changed: </span><span>' + $(j).find('recordChangeDate').text() + '</span></div>' +
                                 //                            '<div><span class="fieldtitle">Origin: </span><span>' + $(j).find('recordOrigin').text() + '</span></div>' +
