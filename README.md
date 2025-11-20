@@ -1,3 +1,12 @@
+## Mau-modifierad 2025-11-20
+* Lagt till Title Case funktion vid titlar + annan organisation
+* Lagt till doi sökning i dublettsöks funktionen i DIVA, samt tydligare markerat vilken träff som är posten man arbetar med
+* Rensning av copyright information från abstract
+* Ändrar curly qoutes till vanliga i titelfält
+* Uppdaterar status 'Epub ahead of print' till 'Published' automatiskt om det finns information i volym eller issue fältet
+
+samt ytterligare någon liten småändring
+
 ## MAU-modifierad 2025-03-14
 
 De funktiner som ändrats eller lagts till av mau är markerade med *mau i koden. De delar som vi inte använder är bortkommenterade. Allt är inte supertestat och förbättringspotential finns helt säkert...
