@@ -267,7 +267,34 @@ var monkey_config = {
         $('#monkeyresults').html('<p>' + response.statusText + '</p>');
         $('#monkeytalk').html('Nu blev det fel!');
     }
+    /**
+     * Funktion för att omvandla till title case
+     *Mau NY
+     *
+     */
+    function toTitleCaseWithExceptions(str) {
+        // Lista med ord som ska vara små (utom om de är första ordet)
+        var exceptions = [
+        'and', 'or', 'nor', 'but', 'a', 'an', 'the', 'to',
+        'as', 'at', 'by', 'for', 'in', 'of', 'on', 'per', 'out',
+        'vs', 'via', 'if', 'up', 'til', 'yet', 'so', 'off'
+        ];
 
+        return str
+            .toLowerCase()
+            .split(/\s+/)
+            .map(function(word, index) {
+            if (index === 0 || exceptions.indexOf(word) === -1) {
+                // Första ordet eller inte i undantagslistan → stor bokstav
+                return word.charAt(0).toUpperCase() + word.slice(1);
+            } else {
+                // Undantagsord → behåll små bokstäver
+                return word;
+            }
+        })
+            .join(' ');
+    }
+	
     /**
      * Hämta info från ORCiD
      *
@@ -630,7 +657,7 @@ var monkey_config = {
 
     /**
      * Funktion för att anropa DiVA och hämta information via "search"
-     *
+     * MAU NY tillägg - söker även doi, den post som uppdateras markeras med röd text och "DENNA POST" innan diva id:t - övriga har blått id.
      * @param {string} titleAll
      * @param {string} format (csl_json=json, mods=xml)
      */
@@ -639,10 +666,10 @@ var monkey_config = {
         $("#monkeyresultswrapper i").css("display", "inline-block");
         $("#monkeytalk").html("Jag pratar med DiVA...");
         var url = monkey_config.diva_search_api_url + '?format=' + format + '&addFilename=true&aq=[[{"titleAll":"' +
-            titleAll.replace("?", "") + '"}]]&aqe=[]&aq2=[[]]&onlyFullText=false&noOfRows=50&sortOrder=title_sort_asc&sortOrder2=title_sort_asc'; // av någon anledning fixar inte sökningen titlar som innehåller eller i alla fall slutar med ett "?"
+        titleAll.replace("?", "") + '"}],[{"doi":"' + doi + '"}]]&aqe=[]&aq2=[[]]&onlyFullText=false&noOfRows=50&sortOrder=title_sort_asc&sortOrder2=title_sort_asc';
         await axios.get(url)
             .then(function(response) {
-                var html = '<div><div class="resultsheader">Information från DiVA, Söktext: ' + '<br /><br />' + titleAll + '</div>';
+                var html = '<div><div class="resultsheader">Information från DiVA, Söktext: ' + '<br /><br />' + titleAll + ' OR ' + doi + '</div>';
                 if (response.data) {
                     var json = response.data
                     if ($(response.data).find('mods').length == 0) {
@@ -650,7 +677,12 @@ var monkey_config = {
                     } else {
                         $(response.data).find('mods').each(function(i, j) {
                             html += '<div class="inforecord flexbox column">';
-                            html += '<h2><p style="color:red;">ID: ' + $(j).find('recordIdentifier').text() + '</p></h2>';
+                            console.log('ID: ',$("div.diva2addtextchoicecol:contains('DiVA-ID')").text().replace(/^DiVA-ID:\s*/, '').trim() )
+                            console.log('ID2: ',$(j).find('recordIdentifier').text().trim() )
+                            if ( $("div.diva2addtextchoicecol:contains('DiVA-ID')").text().replace(/^DiVA-ID:\s*/, '').trim() === $(j).find('recordIdentifier').text().trim()) {
+                                html += '<h2><p style="color:red;">DENNA POST, ID: ' + $(j).find('recordIdentifier').text() + '</p></h2>';
+                                } else {
+                                    html += '<h2><p style="color:blue;">ID: ' + $(j).find('recordIdentifier').text() + '</p></h2>'; }
                             html += '<div><span class="fieldtitle">Status (artiklar): </span><span>' + $(j).find('note[type="publicationStatus"]').text() + '</span></div>' +
                                 '<div><span class="fieldtitle">URI: </span><span><a href="' + $(j).find('identifier[type="uri"]').text() + '" target="_blank">' + $(j).find('identifier[type="uri"]').text() + '</a></span></div>' +
                                 //   '<div><span class="fieldtitle">Publiceringsstatus<br/>(artiklar): </span><span>' + $(j).find('note[type="publicationStatus"]').text() + '</span></div>' +
@@ -780,8 +812,9 @@ var monkey_config = {
      * Funktion för att anropa Crossref och hämta information via DOI
      *
      * @param {string} doi
-      *mau modifierad variant av getCrossref (doi)-  vilkorat så endast hämtar om förlagsinfo inte finns, körs automatiskt - låter omoddad ligga kvar kopplad till knappen.
-     */
+     *mau modifierad variant av getCrossref (doi)-  vilkorat så endast hämtar om förlagsinfo inte finns, körs automatiskt - låter omoddad ligga kvar kopplad till knappen.
+	 *   NY MOD - lagt till ytterligare förlagsändringar   
+	 */
 
     function getCrossref2(doi) {
         //          var doi = $("div.diva2addtextchoicecol:contains('DOI')").parent().find('input').val();
@@ -792,7 +825,7 @@ var monkey_config = {
             axios.get(url)
                 .then(function(response) {
                     var publisher = $(response.data).find('crm-item[name="publisher-name"]').text(); // hämtar förlagsinformation
-                    var publisher_edited = publisher.replace(/Springer Science and Business Media LLC/g, "Springer Nature").replace(/Elsevier BV/g, "Elsevier");
+                    var publisher_edited = publisher.replace(/Springer Science and Business Media LLC/g, "Springer Nature").replace(/Elsevier BV/g, "Elsevier").replace(/Malmo University/g, "Malmö University").replace(/Informa UK Limited/g, "Taylor & Francis Group");
                     $("div.diva2addtextchoicecol:contains('Annat förlag') , div.diva2addtextchoicecol:contains('Other publisher')").parent().find('input').val(publisher_edited); // klistrar in förlagsinfo från Crossref
                     $("#monkeyresultswrapper i").css("display", "none");
                     $('#monkeyupdates').html('<p style="color:green;">Uppdaterat Förlag: ' + publisher_edited + '</p>' + $('#monkeyupdates').html());
@@ -1058,6 +1091,28 @@ function getCrossrefAbs(doi) {
 
         ///////////////////////////////////////////////////////////
         //
+        // Skapa en knapp vid titelfältet för att ändra till
+        // till Title Case
+        //*Mau NY
+        ///////////////////////////////////////////////////////////
+
+        $('#TcButtonjq').remove();
+        var TcButtonjq = $('<button id="TcButtonjq" type="button">TitleCase</button>');
+        //bind en clickfunktion
+        TcButtonjq.on("click", function() {
+                var maintitle = $maintitleiframe.contents().find("body").html();
+                var subtitle = $subtitleiframe.contents().find("body").html();
+                var changedmaintitle = toTitleCaseWithExceptions(maintitle);
+                var changedsubtitle = toTitleCaseWithExceptions(subtitle);
+                $maintitleiframe.contents().find("body").html(changedmaintitle);
+                $subtitleiframe.contents().find("body").html(changedsubtitle);
+            })
+            // extremt fult sätt att skilja 'titel' från 'alternativ titel' eftersom 'alternativ titel' innehåller 'titel'
+        var t_title = $("div.diva2addtextchoicebr:contains('Titel'), div.diva2addtextchoicebr:contains('Title')").not($("div.diva2addtextchoicebr:contains('Alternativ'), div.diva2addtextchoicebr:contains('Alternative'), div.diva2addtextchoicebr:contains('Titel: Handledarens'), div.diva2addtextchoicebr:contains('Title: The supervisor'), div.diva2addtextchoicebr:contains('Titel: Ange opponentens'), div.diva2addtextchoicebr:contains('Title: The opponent'), div.diva2addtextchoicebr:contains('Titel: Ange examinatorns'), div.diva2addtextchoicebr:contains('Title: The examiner')"))
+        $(t_title).before(TcButtonjq)
+		
+		///////////////////////////////////////////////////////////
+        //
         // Skapa en knapp vid titelfältet för proceedings,
         // att splitta titel i huvud- och undertitel vid kolon :
         //
@@ -1097,6 +1152,25 @@ function getCrossrefAbs(doi) {
         $("div.diva2addtextchoice2:contains('Ingår i konferensmeddelande, proceeding'), div.diva2addtextchoice2:contains('Part of proceedings')").parent().before(proctitlecaseButtonjq)
 
         ///////////////////////////////////////////////////////////
+        //
+        // Skapa en knapp vid titelfältet för proceedings,
+        // att ändra till Title Case
+        //*mau NY
+        ///////////////////////////////////////////////////////////
+
+        $('#ptcaseButtonjq').remove();
+        var ptcaseButtonjq = $('<button id="ptButtonjq" type="button">TitleCase</button>');
+        ptcaseButtonjq.on("click", function() {
+            var procmaintitle = $procmaintitleiframe.contents().find("body").html();
+            var procsubtitle = $procsubtitleiframe.contents().find("body").html();
+            var changedprocmaintitle = toTitleCaseWithExceptions(procmaintitle);
+            var changedprocsubtitle = toTitleCaseWithExceptions(procsubtitle);
+            $procmaintitleiframe.contents().find("body").html(changedprocmaintitle);
+            $procsubtitleiframe.contents().find("body").html(changedprocsubtitle);
+        })
+        $("div.diva2addtextchoice2:contains('Ingår i konferensmeddelande, proceeding'), div.diva2addtextchoice2:contains('Part of proceedings')").parent().before(ptcaseButtonjq)
+
+		///////////////////////////////////////////////////////////
         //
         // Skapa en knapp vid titelfältet för böcker,
         // att splitta titel i huvud- och undertitel vid kolon :
@@ -1138,6 +1212,25 @@ function getCrossrefAbs(doi) {
 
         ///////////////////////////////////////////////////////////
         //
+        // Skapa en knapp vid titelfältet för böcker,
+        // att ändra till Title Case
+        //*mau NY
+        ///////////////////////////////////////////////////////////
+
+        $('#btcButtonjq').remove();
+        var btcButtonjq = $('<button id="btcButtonjq" type="button">TitleCase</button>');
+        btcButtonjq.on("click", function() {
+            var bookmaintitle = $bookmaintitleiframe.contents().find("body").html();
+            var booksubtitle = $booksubtitleiframe.contents().find("body").html();
+            var changedbookmaintitle = toTitleCaseWithExceptions(bookmaintitle);
+            var changedbooksubtitle = toTitleCaseWithExceptions(booksubtitle);
+            $bookmaintitleiframe.contents().find("body").html(changedbookmaintitle);
+            $booksubtitleiframe.contents().find("body").html(changedbooksubtitle);
+        })
+        $("div.diva2addtextchoice2:contains('Ingår i bok'), div.diva2addtextchoice2:contains('Part of book')").parent().before(btcButtonjq)
+
+        ///////////////////////////////////////////////////////////
+        //
         // Skapa en knapp vid alternativtitelfältet,
         // att splitta titel i huvud- och undertitel vid kolon :
         //
@@ -1175,7 +1268,26 @@ function getCrossrefAbs(doi) {
             $altsubtitleiframe.contents().find("body").html(changedaltsubtitle);
         })
         $("div.diva2addtextchoice2:contains('Alternativ'), div.diva2addtextchoice2:contains('Alternative')").parent().before(alttitlecaseButtonjq)
+        
+		///////////////////////////////////////////////////////////////
+        //
+        // Skapa en knapp vid alternativtitelfältet,
+        // att ändra till Title Case
+        //*mau NY
+        //////////////////////////////////////////////////////////////
 
+        $('#atcButtonjq').remove();
+        var atcButtonjq = $('<button id="atcButtonjq" type="button">TitleCase</button>');
+        atcButtonjq.on("click", function() {
+            var altmaintitle = $altmaintitleiframe.contents().find("body").html();
+            var altsubtitle = $altsubtitleiframe.contents().find("body").html();
+            var changedaltmaintitle = toTitleCaseWithExceptions(altmaintitle);
+            var changedaltsubtitle = toTitleCaseWithExceptions(altsubtitle);
+            $altmaintitleiframe.contents().find("body").html(changedaltmaintitle);
+            $altsubtitleiframe.contents().find("body").html(changedaltsubtitle);
+        })
+        $("div.diva2addtextchoice2:contains('Alternativ'), div.diva2addtextchoice2:contains('Alternative')").parent().before(atcButtonjq)
+	
         ////////////////////////////////////
         //
         // Knappar vid "Annan serie"/"Other series" - ISSN
@@ -1496,7 +1608,7 @@ function getCrossrefAbs(doi) {
         //////////////////////////////////////////////////
         //
         // Knapp för att ersätta semikolon med komma i keywordsfältet
-        //
+        //*mau NY modifierat - lagt till '|'
         //////////////////////////////////////////////////
 
         i = 0;
@@ -1507,7 +1619,7 @@ function getCrossrefAbs(doi) {
             var keywordsButtonjq = $('<button id="keywordsButtonjq' + i + '" type="button">;->,</button>');
             keywordsButtonjq.on("click", function() {
                 var keywords = $(thiz).parent().find('input').val();
-                var altkeywords = keywords.replace(/;/g, ",");
+                var altkeywords = keywords.replace(/;/g, ",").replace(/\|/g, ",").replace(/ ,/g, ",");
                 $(thiz).parent().find('input').val(altkeywords);
                 $(thiz).parent().find('input').focus();
                 $(this).focus();
@@ -1619,7 +1731,32 @@ function getCrossrefAbs(doi) {
             i++;
         });
 
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+        //
+        // Funktion för att skapa en knapp vid "Annan organisation" för varje författare,
+        // för att ändra att till Title Case
+        //*mau NY
+        ///////////////////////////////////////////////////////////////////////////////////
+        $(otherorg).find("div.diva2addtextchoicecol:contains('Annan organisation') , div.diva2addtextchoicecol:contains('Other organisation')").each(function(index) {
+            var thiz = this;
+            var inputField = $(thiz).next().find('input');
+
+            // Skapa knappen med riktiga taggar
+            var caseButton = $('<button type="button" class="caseButton">A->Aa</button>');
+
+            // Lägg knappen efter inputfältet
+            inputField.after(caseButton);
+
+            // Klickfunktion som använder din funktion
+            caseButton.on("click", function() {
+                var val = inputField.val();
+                if (val.length > 0) {
+                    var newVal = toTitleCaseWithExceptions(val); // Använd funktionen här
+                    inputField.val(newVal);
+                }
+            });
+        });
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////
         //
         // Byt ut Orebro, Malardalen m . fl. till Örebro, Mälardalen etc. i fältet "Annan organisation"
         //*MAU uppdaterad med fler
@@ -1652,6 +1789,38 @@ function getCrossrefAbs(doi) {
             } else {}
             i++;
         });
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //
+        //Abstract rensning, plockar bort allt efter ". ©"/". (C)".
+        //*MAU NY
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        var iframeBody = $("div.diva2addtextchoicebr:contains('Abstract')")
+        .parent().parent().find('iframe').first().contents().find("body");
+
+        var absHtml = iframeBody.html();
+
+
+        var tempContainer = $('<div>').html(absHtml);
+        var i = 0;
+
+        tempContainer.contents().each(function() {
+            var thiz = this;
+            var html = '<div><div class="updateheader"></div>';
+            var newabs = $(thiz).text();
+            var newabs2 = newabs.replace(/\.?\. ©.*$/, ".").replace(/\.?\.©.*$/, ".").replace(/\.?\. \(C\).*$/i, ".").replace(/\.?\.\(C\).*$/i, ".").replace(/\.?\. Copyright \(C\).*$/i, ".").replace(/\.?\. Copyright ©.*$/, ".");
+
+            $(thiz).text(newabs2);
+
+            if (newabs !== newabs2) {
+                html += '<div><p style="color:green;">Uppdaterat "Abstract"</p></div>';
+                $('#monkeyupdates').html(html + $('#monkeyupdates').html());
+            }
+            i++;
+        });
+
+        iframeBody.html(tempContainer.html());
+        iframeBody.find('input').val(tempContainer.text());
 
         //////////////////////////////////////////////////////////////////////////
         //
@@ -2048,15 +2217,15 @@ function getCrossrefAbs(doi) {
 
         /////////////////////////////////////////////////////////////////////////////////////////////////////////
         //
-        // Ta bort punkt i slutet av titel
-        // *mau
+        // Ta bort punkt i slutet av titel, ändra curly quotes till vanliga
+        // *mau NY lagt till ändring av curly qoutes
         /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         function updateIframeContent(iframe, message) {
             let body = iframe.contents().find("body");
             if (body.length > 0) {
                 let content = body.html().trim();
-                let cleanedContent = content.replace(/\.$/, "");
+                let cleanedContent = content.replace(/\.$/, "").replace(/[\u2018\u2019\u201a\u201b\u2032\u2035]/g, "'").replace(/[\u201C\u201D\u201E\u201F\u2033\u2034\u2036\u2037]/g, '"');
                 body.html(cleanedContent);
 
                 if (content !== cleanedContent) {
@@ -2070,6 +2239,7 @@ function getCrossrefAbs(doi) {
         updateIframeContent($subtitleiframe, "Undertitel");
         updateIframeContent($bookmaintitleiframe, "Boktitel");
         updateIframeContent($booksubtitleiframe, "Bokundertitel");
+		
      /**
      * Funktion för att anropa Pubmed och hämta information via DOI
      *  *mau
@@ -2118,7 +2288,7 @@ function getCrossrefAbs(doi) {
         //////////////////////////////////////////////////
         //
         // Knapp för att ersätta komma med semikolon i editorfältet
-        //  *mau
+        //  *mau NY mindre modifiering
         //////////////////////////////////////////////////
 
         i = 0;
@@ -2129,7 +2299,7 @@ function getCrossrefAbs(doi) {
             var editorButtonjq = $('<button id="editorButtonjq' + i + '" type="button">,->;</button>');
             editorButtonjq.on("click", function() {
                 var editor = $(thiz).parent().find('input').val();
-                var alteditor = editor.replace(/ORCID Icon/g,"").replace(/ed./g,"").replace(/[(]/g,"").replace(/[)]/g,"").replace(/, and /g, "; ").replace(/, & /g, "; ").replace(/, och /g, "; ").replace(/,/g, ";").replace(/ och /g, "; ").replace(/ and /g,"; ").replace(/ & /g,"; ").replace(/ ;/g,";");
+                var alteditor = editor.replace(/ORCID Icon/g,"").replace(/Author Picture/g," ").replace(/, and /g, "; ").replace(/, & /g, "; ").replace(/, och /g, "; ").replace(/,/g, ";").replace(/ och /g, "; ").replace(/ and /g, "; ").replace(/ & /g, "; ").replace(/ ;/g, ";");
                 $(thiz).parent().find('input').val(alteditor);
                 $(thiz).parent().find('input').focus();
                 $(this).focus();
@@ -2163,6 +2333,25 @@ function getCrossrefAbs(doi) {
             } else {}
             i++;
         });
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //
+        // Kolla epub ahead of print fältet
+        // *mau NY 
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        if ($("div.diva2addtextchoicebr:contains('Status')").closest('fieldset').find('select.iceSelOneMnu').val()=="published" &&
+            ($("div.diva2addtextchoicecol:contains('Volume:') , div.diva2addtextchoicecol:contains('Volym:')").next().find('input').val()=="" &&
+            $("div.diva2addtextchoicecol:contains('Number:') , div.diva2addtextchoicecol:contains('Nummer:')").next().find('input').val()=="" ))
+            { $('#monkeyupdates').html('<p style="color:green;">KOLLA STATUS! EPUB AHEAD OF PRINT? </p>' + $('#monkeyupdates').html());
+       }
+             if ($("div.diva2addtextchoicebr:contains('Status')").closest('fieldset').find('select.iceSelOneMnu').val()=="aheadofprint" &&
+            ($("div.diva2addtextchoicecol:contains('Volume:') , div.diva2addtextchoicecol:contains('Volym:')").next().find('input').val()!=="" ||
+            $("div.diva2addtextchoicecol:contains('Number:') , div.diva2addtextchoicecol:contains('Nummer:')").next().find('input').val()!=="" )) {
+             $("div.diva2addtextchoicebr:contains('Status')").closest('fieldset').find('select.iceSelOneMnu').val('published');
+             $('#monkeyupdates').html('<p style="color:green;" >Uppdaterat status</p>' + $('#monkeyupdates').html());
+           }
+		
         /////////////////////////////////////////////////////////////////////////////////////////////////////////
         //
         // Hämtar diverse automatiskt när posten öppnas - det Anders kallar headless
