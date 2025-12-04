@@ -1,6 +1,6 @@
-/ ==UserScript==
+// ==UserScript==
 // @name     DiVA.mau
-// @version      2.1-general
+// @version      2.3
 // @description  En Apa för att hjälpa till med DiVA-arbetet på KTH Biblioteket/Mau
 // @author Thomas Lind, Anders Wändahl. Modifierad för Mau av Per Egevad, Aron Lindhagen
 // @match    https://mau.diva-portal.org/dream/edit/editForm.jsf*
@@ -267,34 +267,124 @@ var monkey_config = {
         $('#monkeyresults').html('<p>' + response.statusText + '</p>');
         $('#monkeytalk').html('Nu blev det fel!');
     }
-    /**
+    
+	/**
      * Funktion för att omvandla till title case
-     *Mau NY
+     *mau NY rev 251203
      *
-     */
+     **/
+
     function toTitleCaseWithExceptions(str) {
-        // Lista med ord som ska vara små (utom om de är första ordet)
-        var exceptions = [
-        'and', 'or', 'nor', 'but', 'a', 'an', 'the', 'to',
-        'as', 'at', 'by', 'for', 'in', 'of', 'on', 'per', 'out',
-        'vs', 'via', 'if', 'up', 'til', 'yet', 'so', 'off'
+        const exceptions = [
+            'and', 'or', 'nor', 'but', 'a', 'an', 'the', 'to',
+            'as', 'at', 'by', 'for', 'in', 'of', 'on', 'per', 'out',
+            'vs', 'via', 'if', 'up', 'til', 'yet', 'so', 'off'
         ];
 
         return str
             .toLowerCase()
-            .split(/\s+/)
-            .map(function(word, index) {
-            if (index === 0 || exceptions.indexOf(word) === -1) {
-                // Första ordet eller inte i undantagslistan → stor bokstav
-                return word.charAt(0).toUpperCase() + word.slice(1);
+            .replace(/([\p{L}]+(?:['’-][\p{L}]+)*|\.)/gu, (match, word, offset, full) => {
+            if (match === '.') return '.';
+
+            const prevChar = offset > 0 ? full[offset - 1] : '';
+            const shouldCapitalize =
+                  offset === 0 ||
+                  prevChar === '.' || prevChar === '-' || prevChar === '’' || prevChar === '\'';
+
+            if (shouldCapitalize || exceptions.indexOf(word) === -1) {
+                // Ny kapitalisering: första bokstaven + efter apostrof/bindestreck
+                return word.replace(/(^|['’-])\p{L}/gu, m => m.toUpperCase());
             } else {
-                // Undantagsord → behåll små bokstäver
                 return word;
             }
-        })
-            .join(' ');
+        });
     }
 	
+	/**
+     * knappfunktion för TitleCase knappar
+     *mau NY
+     *
+     **/
+
+    function addUniversalTitleCaseButton(options) {
+        const {
+            selector, buttonId, buttonText, buttonClass,
+            insertAfter, getValues, setValues, multiple = false, watchTarget
+        } = options;
+
+        if (multiple) {
+            // Handle multiple elements with dynamic availability
+            waitForKeyElements(selector, function($element, idx) {
+                // Avoid duplicates per matched element
+                if ($element.data('titlecase-button-added')) return;
+                $element.data('titlecase-button-added', true);
+
+                const $btn = $(`<button type="button" class="${buttonClass}" style="display:none;">${buttonText}</button>`);
+
+                $btn.on("click", function(event) {
+                    event.preventDefault();
+                    const values = getValues($element);
+                    const newValues = values.map(v => toTitleCaseWithExceptions(v));
+                    setValues($element, newValues);
+                });
+
+                if (typeof options.insertWith === 'function') {
+                    options.insertWith($element, $btn);
+                } else if (insertAfter) {
+                    $element.after($btn);
+                } else {
+                    $element.before($btn);
+                }
+
+                // Visa/dölj knappen beroende på om det finns text
+                const toggleButton = () => {
+                    const hasText = getValues($element).some(v => v && v.trim().length > 0);
+                    $btn.toggle(hasText);
+                };
+
+                toggleButton();
+                // Lyssna på förändringar antingen på elementet själv eller angiven watchTarget
+                const $watch = typeof watchTarget === 'function' ? watchTarget($element) : $element;
+                if ($watch && $watch.length) {
+                    $watch.on("input change", toggleButton);
+                }
+            });
+        } else {
+            // Original single-element behavior with waitForKeyElements
+            waitForKeyElements(selector, function($element) {
+                if ($(`#${buttonId}`).length === 0) {
+                    const $btn = $(`<button id="${buttonId}" type="button" class="${buttonClass}" style="display:none;">${buttonText}</button>`);
+
+                    $btn.on("click", function(event) {
+                        event.preventDefault();
+                        const values = getValues($element);
+                        const newValues = values.map(v => toTitleCaseWithExceptions(v));
+                        setValues($element, newValues);
+                    });
+
+                    if (typeof options.insertWith === 'function') {
+                        options.insertWith($element, $btn);
+                    } else if (insertAfter) {
+                        $element.after($btn);
+                    } else {
+                        $element.before($btn);
+                    }
+
+                    // Visa/dölj knappen beroende på om det finns text
+                    const toggleButton = () => {
+                        const hasText = getValues($element).some(v => v && v.trim().length > 0);
+                        $btn.toggle(hasText);
+                    };
+
+                    toggleButton();
+                    const $watch = typeof watchTarget === 'function' ? watchTarget($element) : $element;
+                    if ($watch && $watch.length) {
+                        $watch.on("input change", toggleButton);
+                    }
+                }
+            });
+        }
+    }
     /**
      * Hämta info från ORCiD
      *
@@ -896,10 +986,18 @@ function getCrossrefVol(doi) {
                 if (volume && volume !=  $("div.diva2addtextchoicecol:contains('Volume:') , div.diva2addtextchoicecol:contains('Volym:')").next().find('input').val()) { //om crossref info skiljer sig från DiVA info
                     $("div.diva2addtextchoicecol:contains('Volume:') , div.diva2addtextchoicecol:contains('Volym:')").next().find('input').val(volume); // klistrar in volym från Crossref
                     $('#monkeyupdates').html('<p style="color:green;">Uppdaterat volym:' + volume + '</p>' + $('#monkeyupdates').html());
+                    if ($("div.diva2addtextchoicebr:contains('Status')").closest('fieldset').find('select.iceSelOneMnu').val()=="aheadofprint") {
+                       $("div.diva2addtextchoicebr:contains('Status')").closest('fieldset').find('select.iceSelOneMnu').val('published') //ändrar "ahead of print" till published om lägger till volym
+                       $('#monkeyupdates').html('<p style="color:green;">Uppdaterat status </p>' + $('#monkeyupdates').html());
+                        }
                     }
                 if (issue && issue != $("div.diva2addtextchoicecol:contains('Number:') , div.diva2addtextchoicecol:contains('Nummer:')").next().find('input').val() ) { //om crossref info skiljer sig från DiVA info
                     $("div.diva2addtextchoicecol:contains('Number:') , div.diva2addtextchoicecol:contains('Nummer:')").next().find('input').val(issue); // klistrar in nummer från Crossref
                     $('#monkeyupdates').html('<p style="color:green;">Uppdaterat issue:' + issue + '</p>' + $('#monkeyupdates').html());
+                    if ($("div.diva2addtextchoicebr:contains('Status')").closest('fieldset').find('select.iceSelOneMnu').val()=="aheadofprint") {
+                       $("div.diva2addtextchoicebr:contains('Status')").closest('fieldset').find('select.iceSelOneMnu').val('published') //ändrar "ahead of print" till published om lägger till issue
+                       $('#monkeyupdates').html('<p style="color:green;">Uppdaterat status </p>' + $('#monkeyupdates').html());
+                        }
                     }
                 if (article_id && article_id != $("div.diva2addtextchoicecol:contains('Article Id:') , div.diva2addtextchoicecol:contains('Artikel-id:')").next().find('input').val() ) {//om crossref info skiljer sig från DiVA info
                    $("div.diva2addtextchoicecol:contains('Article Id:') , div.diva2addtextchoicecol:contains('Artikel-id:')").next().find('input').val(article_id); // klistrar in article id från Crossref
@@ -1089,28 +1187,6 @@ function getCrossrefAbs(doi) {
             // extremt fult sätt att skilja 'titel' från 'alternativ titel' eftersom 'alternativ titel' innehåller 'titel'
         var c_title = $("div.diva2addtextchoicebr:contains('Titel'), div.diva2addtextchoicebr:contains('Title')").not($("div.diva2addtextchoicebr:contains('Alternativ'), div.diva2addtextchoicebr:contains('Alternative'), div.diva2addtextchoicebr:contains('Titel: Handledarens'), div.diva2addtextchoicebr:contains('Title: The supervisor'), div.diva2addtextchoicebr:contains('Titel: Ange opponentens'), div.diva2addtextchoicebr:contains('Title: The opponent'), div.diva2addtextchoicebr:contains('Titel: Ange examinatorns'), div.diva2addtextchoicebr:contains('Title: The examiner')"))
         $(c_title).before(caseButtonjq)
-
-        ///////////////////////////////////////////////////////////
-        //
-        // Skapa en knapp vid titelfältet för att ändra till
-        // till Title Case
-        //*Mau NY
-        ///////////////////////////////////////////////////////////
-
-        $('#TcButtonjq').remove();
-        var TcButtonjq = $('<button id="TcButtonjq" type="button">TitleCase</button>');
-        //bind en clickfunktion
-        TcButtonjq.on("click", function() {
-                var maintitle = $maintitleiframe.contents().find("body").html();
-                var subtitle = $subtitleiframe.contents().find("body").html();
-                var changedmaintitle = toTitleCaseWithExceptions(maintitle);
-                var changedsubtitle = toTitleCaseWithExceptions(subtitle);
-                $maintitleiframe.contents().find("body").html(changedmaintitle);
-                $subtitleiframe.contents().find("body").html(changedsubtitle);
-            })
-            // extremt fult sätt att skilja 'titel' från 'alternativ titel' eftersom 'alternativ titel' innehåller 'titel'
-        var t_title = $("div.diva2addtextchoicebr:contains('Titel'), div.diva2addtextchoicebr:contains('Title')").not($("div.diva2addtextchoicebr:contains('Alternativ'), div.diva2addtextchoicebr:contains('Alternative'), div.diva2addtextchoicebr:contains('Titel: Handledarens'), div.diva2addtextchoicebr:contains('Title: The supervisor'), div.diva2addtextchoicebr:contains('Titel: Ange opponentens'), div.diva2addtextchoicebr:contains('Title: The opponent'), div.diva2addtextchoicebr:contains('Titel: Ange examinatorns'), div.diva2addtextchoicebr:contains('Title: The examiner')"))
-        $(t_title).before(TcButtonjq)
 		
 		///////////////////////////////////////////////////////////
         //
@@ -1151,26 +1227,7 @@ function getCrossrefAbs(doi) {
             $procsubtitleiframe.contents().find("body").html(changedprocsubtitle);
         })
         $("div.diva2addtextchoice2:contains('Ingår i konferensmeddelande, proceeding'), div.diva2addtextchoice2:contains('Part of proceedings')").parent().before(proctitlecaseButtonjq)
-
-        ///////////////////////////////////////////////////////////
-        //
-        // Skapa en knapp vid titelfältet för proceedings,
-        // att ändra till Title Case
-        //*mau NY
-        ///////////////////////////////////////////////////////////
-
-        $('#ptcaseButtonjq').remove();
-        var ptcaseButtonjq = $('<button id="ptButtonjq" type="button">TitleCase</button>');
-        ptcaseButtonjq.on("click", function() {
-            var procmaintitle = $procmaintitleiframe.contents().find("body").html();
-            var procsubtitle = $procsubtitleiframe.contents().find("body").html();
-            var changedprocmaintitle = toTitleCaseWithExceptions(procmaintitle);
-            var changedprocsubtitle = toTitleCaseWithExceptions(procsubtitle);
-            $procmaintitleiframe.contents().find("body").html(changedprocmaintitle);
-            $procsubtitleiframe.contents().find("body").html(changedprocsubtitle);
-        })
-        $("div.diva2addtextchoice2:contains('Ingår i konferensmeddelande, proceeding'), div.diva2addtextchoice2:contains('Part of proceedings')").parent().before(ptcaseButtonjq)
-
+		
 		///////////////////////////////////////////////////////////
         //
         // Skapa en knapp vid titelfältet för böcker,
@@ -1211,26 +1268,7 @@ function getCrossrefAbs(doi) {
         })
         $("div.diva2addtextchoice2:contains('Ingår i bok'), div.diva2addtextchoice2:contains('Part of book')").parent().before(booktitlecaseButtonjq)
 
-        ///////////////////////////////////////////////////////////
-        //
-        // Skapa en knapp vid titelfältet för böcker,
-        // att ändra till Title Case
-        //*mau NY
-        ///////////////////////////////////////////////////////////
-
-        $('#btcButtonjq').remove();
-        var btcButtonjq = $('<button id="btcButtonjq" type="button">TitleCase</button>');
-        btcButtonjq.on("click", function() {
-            var bookmaintitle = $bookmaintitleiframe.contents().find("body").html();
-            var booksubtitle = $booksubtitleiframe.contents().find("body").html();
-            var changedbookmaintitle = toTitleCaseWithExceptions(bookmaintitle);
-            var changedbooksubtitle = toTitleCaseWithExceptions(booksubtitle);
-            $bookmaintitleiframe.contents().find("body").html(changedbookmaintitle);
-            $booksubtitleiframe.contents().find("body").html(changedbooksubtitle);
-        })
-        $("div.diva2addtextchoice2:contains('Ingår i bok'), div.diva2addtextchoice2:contains('Part of book')").parent().before(btcButtonjq)
-
-        ///////////////////////////////////////////////////////////
+		///////////////////////////////////////////////////////////
         //
         // Skapa en knapp vid alternativtitelfältet,
         // att splitta titel i huvud- och undertitel vid kolon :
@@ -1270,24 +1308,119 @@ function getCrossrefAbs(doi) {
         })
         $("div.diva2addtextchoice2:contains('Alternativ'), div.diva2addtextchoice2:contains('Alternative')").parent().before(alttitlecaseButtonjq)
         
-		///////////////////////////////////////////////////////////////
+		        ///////////////////////////////////////////////////////////
         //
-        // Skapa en knapp vid alternativtitelfältet,
-        // att ändra till Title Case
-        //*mau NY
-        //////////////////////////////////////////////////////////////
+        // Knappar vid titelfält för att ändra till
+        // till Title Case
+        //*Mau NY
+        ///////////////////////////////////////////////////////////
+        // Huvudtitel (iframe)
+        addUniversalTitleCaseButton({
+            selector: "div.diva2addtextchoicebr:contains('Titel'), div.diva2addtextchoicebr:contains('Title')",
+            buttonId: "TcButtonjq",
+            buttonText: "TitleCase",
+            buttonClass: "titleCaseBtn",
+            insertAfter: false,
+            getValues: () => [
+                $maintitleiframe.contents().find("body").html().replace(/&nbsp;/gi, ' '),
+                $subtitleiframe.contents().find("body").html().replace(/&nbsp;/gi, ' ')
+            ],
+            setValues: (_, vals) => {
+                $maintitleiframe.contents().find("body").html(vals[0]);
+                $subtitleiframe.contents().find("body").html(vals[1]);
+            }
+        });
 
-        $('#atcButtonjq').remove();
-        var atcButtonjq = $('<button id="atcButtonjq" type="button">TitleCase</button>');
-        atcButtonjq.on("click", function() {
-            var altmaintitle = $altmaintitleiframe.contents().find("body").html();
-            var altsubtitle = $altsubtitleiframe.contents().find("body").html();
-            var changedaltmaintitle = toTitleCaseWithExceptions(altmaintitle);
-            var changedaltsubtitle = toTitleCaseWithExceptions(altsubtitle);
-            $altmaintitleiframe.contents().find("body").html(changedaltmaintitle);
-            $altsubtitleiframe.contents().find("body").html(changedaltsubtitle);
-        })
-        $("div.diva2addtextchoice2:contains('Alternativ'), div.diva2addtextchoice2:contains('Alternative')").parent().before(atcButtonjq)
+        // Proceedings
+        addUniversalTitleCaseButton({
+            selector: "div.diva2addtextchoice2:contains('Ingår i konferensmeddelande, proceeding'), div.diva2addtextchoice2:contains('Part of proceedings')",
+            buttonId: "ptButtonjq",
+            buttonText: "TitleCase",
+            buttonClass: "titleCaseBtn",
+            insertAfter: false,
+            getValues: () => [
+                $procmaintitleiframe.contents().find("body").html().replace(/&nbsp;/gi, ' '),
+                $procsubtitleiframe.contents().find("body").html().replace(/&nbsp;/gi, ' ')
+            ],
+            setValues: (_, vals) => {
+                $procmaintitleiframe.contents().find("body").html(vals[0]);
+                $procsubtitleiframe.contents().find("body").html(vals[1]);
+            }
+        });
+
+        // Bok
+        addUniversalTitleCaseButton({
+            selector: "div.diva2addtextchoice2:contains('Ingår i bok'), div.diva2addtextchoice2:contains('Part of book')",
+            buttonId: "btcButtonjq",
+            buttonText: "TitleCase",
+            buttonClass: "titleCaseBtn",
+            insertAfter: false,
+            getValues: () => [
+                $bookmaintitleiframe.contents().find("body").html().replace(/&nbsp;/gi, ' '),
+                $booksubtitleiframe.contents().find("body").html().replace(/&nbsp;/gi, ' ')
+            ],
+            setValues: (_, vals) => {
+                $bookmaintitleiframe.contents().find("body").html(vals[0]);
+                $booksubtitleiframe.contents().find("body").html(vals[1]);
+            }
+        });
+
+        // Alternativ titel
+        addUniversalTitleCaseButton({
+            selector: "div.diva2addtextchoice2:contains('Alternativ'), div.diva2addtextchoice2:contains('Alternative')",
+            buttonId: "atcButtonjq",
+            buttonText: "TitleCase",
+            buttonClass: "titleCaseBtn",
+            insertAfter: false,
+            getValues: () => [
+                $altmaintitleiframe.contents().find("body").html().replace(/&nbsp;/gi, ' '),
+                $altsubtitleiframe.contents().find("body").html().replace(/&nbsp;/gi, ' ')
+            ],
+            setValues: (_, vals) => {
+                $altmaintitleiframe.contents().find("body").html(vals[0]);
+                $altsubtitleiframe.contents().find("body").html(vals[1]);
+            }
+        });
+
+        ////////////////////////////////////
+        //
+        // Title Case på journal titles, Serier, förlag
+        //*Mau NY
+        ////////////////////////////////////
+
+        //Journal title
+        addUniversalTitleCaseButton({
+            selector: "input[id$='uncontrolledJournalJournalNameUncontrolled']",
+            buttonId: "JTCasejq",
+            buttonText: "A->a",
+            buttonClass: "caseButton",
+            insertAfter: true,
+            getValues: ($el) => [$el.val()],
+            setValues: ($el, vals) => $el.val(vals[0])
+        });
+
+        //Serie
+        addUniversalTitleCaseButton({
+            selector: "input[id$='seriesUnControlled']",
+            buttonId: "SeriesTCjq",
+            buttonText: "A->a",
+            buttonClass: "caseButton",
+            insertAfter: true,
+            getValues: ($el) => [$el.val()],
+            setValues: ($el, vals) => $el.val(vals[0])
+        });
+
+        //Förlag
+        addUniversalTitleCaseButton({
+            selector: "input[id$='publishername']",
+            buttonId: "PublCasejq",
+            buttonText: "A->a",
+            buttonClass: "caseButton",
+            insertAfter: true,
+            getValues: ($el) => [$el.val()],
+            setValues: ($el, vals) => $el.val(vals[0])
+        });
+
 	
         ////////////////////////////////////
         //
@@ -1735,7 +1868,7 @@ function getCrossrefAbs(doi) {
         ///////////////////////////////////////////////////////////////////////////////////
         //
         // Funktion för att skapa en knapp vid "Annan organisation" för varje författare,
-        // för att ändra att till Title Case
+        // för att ändra att ändra versaler till gemener förutom första bokstaven
         //*mau NY
         ///////////////////////////////////////////////////////////////////////////////////
         $(otherorg).find("div.diva2addtextchoicecol:contains('Annan organisation') , div.diva2addtextchoicecol:contains('Other organisation')").each(function(index) {
@@ -1769,8 +1902,8 @@ function getCrossrefAbs(doi) {
             var thiz = this;
             var html = '<div><div class="updateheader"></div>';
             var neworg = $(thiz).next().find('input').val();
-            var neworg2 = neworg.replace(/\s*;(?!\s*$)\s*/g, '; ').replace(/\s*,(?!\s*$)\s*/g, ', ').trim().replace(/\.$/, "").replace(/\;$/, "").replace(/\,$/, "").replace(/\.\;/g, ";")
-            .replace(/\; \;/g,";").replace(/Bracke/g, "Bräcke").replace(/Skondal/g, "Sköndal").replace(/Hogskola/g, "Högskola").replace(/Linkoping/g, "Linköping")
+            var neworg2 = neworg.trim().replace(/ {4,}/g,'; ').replace(/\s*;(?!\s*$)\s*/g, '; ').replace(/\s*,(?!\s*$)\s*/g, ', ').replace(/\.$/, "").replace(/\;$/, "").replace(/\,$/, "").replace(/\.\;/g, ";")
+            .replace(/\; \;/g,";").replace(/ö/g, "ö").replace(/Bracke/g, "Bräcke").replace(/Skondal/g, "Sköndal").replace(/Hogskola/g, "Högskola").replace(/Linkoping/g, "Linköping")
             .replace(/Malardalen/g, "Mälardalen").replace(/Orebro/g, "Örebro").replace(/Vasteras/g, "Västerås").replace(/Goteborg/g, "Göteborg").replace(/Norrkoping/g, "Norrköping")
             .replace(/Vaxjo/g, "Växjö").replace(/Umea/g, "Umeå").replace(/Lulea/g, "Luleå").replace(/Ostersund/g, "Östersund").replace(/Trollhattan/g, "Trollhättan")
             .replace(/Jonkoping/g, "Jönköping").replace(/Malmo/g, "Malmö").replace(/Sodertorn/g, "Södertörn").replace(/Gavle/g, "Gävle").replace(/Skovde/g, "Skövde")
@@ -1825,15 +1958,15 @@ function getCrossrefAbs(doi) {
 
         //////////////////////////////////////////////////////////////////////////
         //
-        //Knappar för *författare* till LDAP, Leta KTH anställda, KTH Intra, Google och ORCiD - används ej Mau
+        //Knappar för *författare* till LDAP, Leta KTH anställda, KTH Intra, Google och ORCiD - används delvis Mau
         //
         //////////////////////////////////////////////////////////////////////////
-/*
+
         var authors = $('#' + diva_id + '\\:authorSerie');
         i = 0;
         $(authors).find('.diva2addtextarea').each(function() {
             var thiz = this;
-
+/*
             //LDAP/UG
             if (monkey_config.ldap) {
                 $('#ldapButtonAuthorjq' + i).remove();
@@ -1852,7 +1985,7 @@ function getCrossrefAbs(doi) {
                 })
                 $(this).before(letaButtonjq)
             }
-
+*/
             //Sök i ORCiD
             if (monkey_config.orcid) {
                 $('#orcidButtonAuthorjq' + i).remove();
@@ -1862,7 +1995,7 @@ function getCrossrefAbs(doi) {
                 })
                 $(this).before(orcidButtonjq);
             }
-
+/*
             //Intranät förnamn efternamn
             if (monkey_config.intranet) {
                 $('#intraButtonAuthorjq' + i).remove();
@@ -1881,7 +2014,7 @@ function getCrossrefAbs(doi) {
                 })
                 $(this).before(intraButtonjq)
             }
-
+*/
             //Google.com förnamn + efternamn + lärosäte
             $('#googleButtonAuthorjq' + i).remove();
             var googleButtonjq = $('<button class="link" id="googleButtonAuthorjq' + i + '" type="button">Google</button>');
@@ -1898,7 +2031,7 @@ function getCrossrefAbs(doi) {
 
             i++;
         });
-*/
+
         //////////////////////////////////////////////////////////////////////////
         //
         //Knappar för *redaktörer* till LDAP, Leta KTH anställda, KTH Intra, Google och ORCiD
@@ -2286,6 +2419,31 @@ function getCrossrefAbs(doi) {
             }
             i++;
         });
+		
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //
+        // Knapp för att ändra författarnamn i versaler
+        // *mau NY
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        // Skapa knappar för varje författarblock
+        addUniversalTitleCaseButton({
+            selector: '#' + diva_id + '\\:authorSerie .diva2addtextarea',
+            buttonId: "nameButtonjq",
+            buttonText: "A->Aa",
+            buttonClass: "nameButton",
+            insertAfter: false,
+            multiple: true,
+            getValues: ($el) => [
+                $el.find('input[id$="autFamily"]').val(),
+                $el.find('input[id$="autGiven"]').val()
+            ],
+            setValues: ($el, vals) => {
+                $el.find('input[id$="autFamily"]').val(vals[0]);
+                $el.find('input[id$="autGiven"]').val(vals[1]);
+            }
+        });
+		
         //////////////////////////////////////////////////
         //
         // Knapp för att ersätta komma med semikolon i editorfältet
