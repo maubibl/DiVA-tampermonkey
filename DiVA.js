@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name     DiVA.mau
-// @version      2.3
+// @name     DiVA
+// @version      2.3_mau
 // @updateURL    https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @description  En Apa för att hjälpa till med DiVA-arbetet på KTH Biblioteket/Mau
 // @author Thomas Lind, Anders Wändahl. Modifierad för Mau av Per Egevad, Aron Lindhagen
@@ -80,8 +80,8 @@ var monkey_config = {
         scopus: true,
         qc: true,
         pubmed: true,
-        monkey_image_url: "https://raw.githubusercontent.com/kth-biblioteket/kthb-DiVA-tampermonkey/master/images/apa.jpg",
-        oa_image_url: "https://raw.githubusercontent.com/kth-biblioteket/kthb-DiVA-tampermonkey/master/images/oa.png",
+        monkey_image_url: "https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/images/apa.jpg",
+        oa_image_url: "https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/images/oa.png",
         university: 'mau',
         diva_search_api_url: 'https://mau.diva-portal.org/smash/export.jsf',
         diva_search_url: 'https://mau.diva-portal.org/smash/resultList.jsf',
