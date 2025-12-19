@@ -2,6 +2,7 @@
 // @name     DiVA
 // @version      2.3_mau
 // @updateURL    https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
+// @downloadURL  https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @description  En Apa för att hjälpa till med DiVA-arbetet på KTH Biblioteket/Mau
 // @author Thomas Lind, Anders Wändahl. Modifierad för Mau av Per Egevad, Aron Lindhagen
 // @match    https://mau.diva-portal.org/dream/edit/editForm.jsf*
