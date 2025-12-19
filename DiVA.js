@@ -23,16 +23,13 @@
 // @require  https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js
 // @grant    GM_xmlhttpRequest
 // @grant    GM_addStyle
-// @connect  lib.mau.se
 // @connect  pub.orcid.org
-// @connect  localhost
 // @connect  api.elsevier.com
 // @connect  google.com
 // @connect  mau.diva-portal.org
-// @connect  mau.test.diva-portal.org
-// @connect  ws.isiknowledge.com
+// @connect  api.lib.mau.se
 // @connect  wos-api.clarivate.com
-// @connect  clarivate.com
+// @connect  api.clarivate.com
 // @connect  portal.issn.org
 // @connect  www.worldcat.org
 // @connect  dblp.uni-trier.de
@@ -40,10 +37,8 @@
 // @connect  api.crossref.org
 // @connect  bibliometri.swepub.kb.se
 // @connect  www.semanticscholar.org
-// @connect  www.example.net
-// @connect  github.com
-// @connect  api.clarivate.com
-// @connect  eutils.ncbi.nlm.nih.gov/
+// @connect  www.google.com
+// @connect  eutils.ncbi.nlm.nih.gov
 
 // @noframes
 // ==/UserScript==
