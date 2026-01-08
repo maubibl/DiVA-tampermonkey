@@ -898,7 +898,7 @@ var monkey_config = {
             axios.get(url)
                 .then(function(response) {
                     var publisher = $(response.data).find('crm-item[name="publisher-name"]').text(); // hämtar förlagsinformation
-                    var publisher_edited = publisher.replace(/Springer Science and Business Media LLC/g, "Springer Nature");
+                    var publisher_edited = publisher.replace(/Springer Science and Business Media LLC/g, "Springer Nature").replace(/Elsevier BV/g, "Elsevier").replace(/Malmo University/g, "Malmö University").replace(/Informa UK Limited/g, "Taylor & Francis Group");
                     $("div.diva2addtextchoicecol:contains('Annat förlag') , div.diva2addtextchoicecol:contains('Other publisher')").parent().find('input').val(publisher_edited); // klistrar in förlagsinfo från Crossref
                     $("#monkeyresultswrapper i").css("display", "none");
                     $('#monkeyupdates').html('<p style="color:green;">Uppdaterat Förlag: ' + publisher_edited + '</p>' + $('#monkeyupdates').html());
