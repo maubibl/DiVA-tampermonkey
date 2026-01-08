@@ -2374,7 +2374,13 @@ function getCrossrefAbs(doi) {
             let body = iframe.contents().find("body");
             if (body.length > 0) {
                 let content = body.html().trim();
-                let cleanedContent = content.replace(/\.$/, "").replace(/[\u2018\u2019\u201a\u201b\u2032\u2035]/g, "'").replace(/[\u201C\u201D\u201E\u201F\u2033\u2034\u2036\u2037]/g, '"');
+                // Only remove a single trailing dot when the text does NOT end with two
+                // or more dots (so we don't strip from ellipses like '..' or '...').
+                let cleanedContent = content;
+                if (!/\.{2,}$/.test(content)) {
+                    cleanedContent = cleanedContent.replace(/\.$/, '');
+                }
+                cleanedContent = cleanedContent.replace(/[\u2018\u2019\u201a\u201b\u2032\u2035]/g, "'").replace(/[\u201C\u201D\u201E\u201F\u2033\u2034\u2036\u2037]/g, '"');
                 body.html(cleanedContent);
 
                 if (content !== cleanedContent) {
