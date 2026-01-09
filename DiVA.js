@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     DiVA
-// @version      2.3_mau
+// @version      2.3.1_mau
 // @updateURL    https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @downloadURL  https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @description  En Apa för att hjälpa till med DiVA-arbetet på KTH Biblioteket/Mau
