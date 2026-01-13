@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     DiVA
-// @version      2.3.1_mau
+// @version      2.3.1.1_mau
 // @updateURL    https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @downloadURL  https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @description  En Apa för att hjälpa till med DiVA-arbetet på KTH Biblioteket/Mau
@@ -898,7 +898,7 @@ var monkey_config = {
             axios.get(url)
                 .then(function(response) {
                     var publisher = $(response.data).find('crm-item[name="publisher-name"]').text(); // hämtar förlagsinformation
-                    var publisher_edited = publisher.replace(/Springer Science and Business Media LLC/g, "Springer Nature").replace(/Elsevier BV/g, "Elsevier").replace(/Malmo University/g, "Malmö University").replace(/Informa UK Limited/g, "Taylor & Francis Group");
+                    var publisher_edited = publisher.replace(/Springer Science and Business Media LLC/g, "Springer Nature").replace(/Elsevier BV/g, "Elsevier").replace(/Elsevier Inc./g, "Elsevier").replace(/Malmo University/g, "Malmö University").replace(/Informa UK Limited/g, "Taylor & Francis Group");
                     $("div.diva2addtextchoicecol:contains('Annat förlag') , div.diva2addtextchoicecol:contains('Other publisher')").parent().find('input').val(publisher_edited); // klistrar in förlagsinfo från Crossref
                     $("#monkeyresultswrapper i").css("display", "none");
                     $('#monkeyupdates').html('<p style="color:green;">Uppdaterat Förlag: ' + publisher_edited + '</p>' + $('#monkeyupdates').html());
@@ -930,7 +930,7 @@ var monkey_config = {
             axios.get(url)
                 .then(function(response) {
                     var publisher = $(response.data).find('crm-item[name="publisher-name"]').text(); // hämtar förlagsinformation
-                    var publisher_edited = publisher.replace(/Springer Science and Business Media LLC/g, "Springer Nature").replace(/Elsevier BV/g, "Elsevier").replace(/Malmo University/g, "Malmö University").replace(/Informa UK Limited/g, "Taylor & Francis Group");
+                    var publisher_edited = publisher.replace(/Springer Science and Business Media LLC/g, "Springer Nature").replace(/Elsevier BV/g, "Elsevier").replace(/Elsevier Inc./g, "Elsevier").replace(/Malmo University/g, "Malmö University").replace(/Informa UK Limited/g, "Taylor & Francis Group");
                     $("div.diva2addtextchoicecol:contains('Annat förlag') , div.diva2addtextchoicecol:contains('Other publisher')").parent().find('input').val(publisher_edited); // klistrar in förlagsinfo från Crossref
                     $("#monkeyresultswrapper i").css("display", "none");
                     $('#monkeyupdates').html('<p style="color:green;">Uppdaterat Förlag: ' + publisher_edited + '</p>' + $('#monkeyupdates').html());
@@ -1921,7 +1921,7 @@ function getCrossrefAbs(doi) {
             .replace(/\; \;/g,";").replace(/ö/g, "ö").replace(/Bracke/g, "Bräcke").replace(/Skondal/g, "Sköndal").replace(/Hogskola/g, "Högskola").replace(/Linkoping/g, "Linköping")
             .replace(/Malardalen/g, "Mälardalen").replace(/Orebro/g, "Örebro").replace(/Vasteras/g, "Västerås").replace(/Goteborg/g, "Göteborg").replace(/Norrkoping/g, "Norrköping")
             .replace(/Vaxjo/g, "Växjö").replace(/Umea/g, "Umeå").replace(/Lulea/g, "Luleå").replace(/Ostersund/g, "Östersund").replace(/Trollhattan/g, "Trollhättan")
-            .replace(/Jonkoping/g, "Jönköping").replace(/Malmo/g, "Malmö").replace(/Sodertorn/g, "Södertörn").replace(/Gavle/g, "Gävle").replace(/Skovde/g, "Skövde")
+            .replace(/Jonkoping/g, "Jönköping").replace(/Malmoe/g, "Malmö").replace(/Malmo/g, "Malmö").replace(/Sodertorn/g, "Södertörn").replace(/Gavle/g, "Gävle").replace(/Skovde/g, "Skövde")
             .replace(/Boras/g, "Borås").replace(/Sodertalje/g, "Södertälje").replace(/Borlange/g, "Borlänge").replace(/Harnosand/g, "Härnösand").replace(/Skelleftea/g, "Skellefteå")
             .replace(/Sjofart/g, "Sjöfart").replace(/Molnlycke/g, "Mölnlycke").replace(/Domsjo/g, "Domsjö").replace(/Varobacka/g, "Väröbacka").replace(/Sodra Innovat/g, "Södra Innovat")
             .replace(/Nykoping/g, "Nyköping").replace(/Ornskoldsvik/g, "Örnsköldsvik").replace(/Molndal/g, "Mölndal").replace(/Upplands Vasby/g, "Upplands Väsby")
