@@ -771,15 +771,16 @@ var monkey_config = {
         $("#monkeytalk").html("Jag pratar med DiVA...");
         var url = monkey_config.diva_search_api_url + '?format=' + format + '&addFilename=true&aq=[[{"titleAll":"' +
         titleAll.replace("?", "") + '"}],[{"doi":"' + doi + '"}]]&aqe=[]&aq2=[[]]&onlyFullText=false&noOfRows=50&sortOrder=title_sort_asc&sortOrder2=title_sort_asc';
-        await axios.get(url)
-            .then(function(response) {
+        await GM_xmlhttpRequest({
+            method: "GET",
+            url: url,
+            onload: function(response) {
                 var html = '<div><div class="resultsheader">Information från DiVA, Söktext: ' + '<br /><br />' + titleAll + ' OR ' + doi + '</div>';
-                if (response.data) {
-                    var json = response.data
-                    if ($(response.data).find('mods').length == 0) {
+                if (response.responseText) {
+                    if ($(response.responseText).find('mods').length == 0) {
                         html += '<div><span class="fieldtitle"><br /><p style="color:green;">Jag hittade ingenting!<br />Det finns sannolikt ingen dubblett!</p></span></div></div>';
                     } else {
-                        $(response.data).find('mods').each(function(i, j) {
+                        $(response.responseText).find('mods').each(function(i, j) {
                             html += '<div class="inforecord flexbox column">';
                             console.log('ID: ',$("div.diva2addtextchoicecol:contains('DiVA-ID')").text().replace(/^DiVA-ID:\s*/, '').trim() )
                             console.log('ID2: ',$(j).find('recordIdentifier').text().trim() )
@@ -828,12 +829,12 @@ var monkey_config = {
                 $("#monkeyresultswrapper i").css("display", "none");
                 $('#monkeyresults').html(html);
                 $("#monkeytalk").html("DiVA svarade... se resultatet här nedanför");
-            })
-            .catch(function(error) {
+            },
+            onerror: function(error) {
                 $("#monkeyresultswrapper i").css("display", "none");
                 $("#monkeytalk").html("Jag hittade inget i DiVA");
-            })
-            .then(function() {});
+            }
+        });
     }
 
     /**
@@ -938,7 +939,6 @@ var monkey_config = {
                     $("#monkeytalk").html("Crossref svarade... se resultatet under \"Annat förlag\" i posten!");
                 })
                 .catch(function(error) {
-                    $('#monkeyresults').html('');
                     $("#monkeyresultswrapper i").css("display", "none");
                     $("#monkeytalk").html("Nej, jag hittade inget i Crossref");
                 })
