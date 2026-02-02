@@ -770,7 +770,7 @@ var monkey_config = {
         $("#monkeyresultswrapper i").css("display", "inline-block");
         $("#monkeytalk").html("Jag pratar med DiVA...");
         var url = monkey_config.diva_search_api_url + '?format=' + format + '&addFilename=true&aq=[[{"titleAll":"' +
-        titleAll.replace("?", "") + '"}],[{"doi":"' + doi + '"}]]&aqe=[]&aq2=[[]]&onlyFullText=false&noOfRows=50&sortOrder=title_sort_asc&sortOrder2=title_sort_asc';
+        titleAll.replace(/<[^>]*>/g, "").replace(/\?/g, "") + '"}],[{"doi":"' + doi + '"}]]&aqe=[]&aq2=[[]]&onlyFullText=false&noOfRows=50&sortOrder=title_sort_asc&sortOrder2=title_sort_asc';
         await GM_xmlhttpRequest({
             method: "GET",
             url: url,
@@ -1151,7 +1151,7 @@ function getCrossrefAbs(doi) {
         var $maintitleiframe;
         $maintitleiframe = $("div.diva2addtextchoicecol:contains('Huvudtitel:') , div.diva2addtextchoicecol:contains('Main title:')").parent().next().find('iframe').first();
         DiVAButtonjq.on("click", function() {
-            getDiVA($maintitleiframe.contents().find("body").html().replace(/&nbsp;/g, " ").replace(/\?/g, "").replace(/&amp;/g, "?"), 'mods'); // ta bort saker som innehåller "&" och "?" som sökningen inte klarar av
+            getDiVA($maintitleiframe.contents().find("body").html().replace(/&nbsp;/g, " ").replace(/\?/g, "").replace(/&amp;/g, "?").replace(/<[^>]*>/g, ""), 'mods'); // ta bort saker som innehåller "&" och "?" som sökningen inte klarar av
         })
         $(".diva2editmainer").before(DiVAButtonjq)
         $(".diva2impmainer").before(DiVAButtonjq)
