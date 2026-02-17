@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     DiVA
-// @version      2.3.1.2_mau
+// @version      2.3.1.3_mau
 // @updateURL    https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @downloadURL  https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @description  En Apa för att hjälpa till med DiVA-arbetet på KTH Biblioteket/Mau
@@ -953,6 +953,7 @@ var monkey_config = {
      */
 function getCrossrefVol(doi) {
         //          var doi = $("div.diva2addtextchoicecol:contains('DOI')").parent().find('input').val();
+        console.log('[DiVA] getCrossrefVol called with DOI:', doi);
         if (doi != "") {
 
             $("#monkeyresultswrapper i").css("display", "inline-block");
@@ -993,6 +994,10 @@ function getCrossrefVol(doi) {
                         // Trim any extra whitespace at the end
                        concAbs = concAbs.trim();
 
+                console.log('[DiVA] getCrossrefVol: concAbs =', concAbs ? concAbs.substring(0, 100) : '(empty)', 'abstract =', abstract ? abstract.substring(0, 100) : '(empty)');
+                var $absIframe = $("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first();
+                console.log('[DiVA] getCrossrefVol: iframe exists =', $absIframe.length > 0, 'isEmpty =', isAbstractEmpty($absIframe));
+
                 if (year && year!= $("div.diva2addtextchoicecol:contains('Year:') , div.diva2addtextchoicecol:contains('År:')").next().find('input').val() ) { //om crossref info skiljer sig från DiVA info
                     $("div.diva2addtextchoicecol:contains('Year:') , div.diva2addtextchoicecol:contains('År:')").next().find('input').val(year); // klistrar in år från Crossref
                     $('#monkeyupdates').html('<p style="color:green;">Uppdaterat år:' + year +'</p>' + $('#monkeyupdates').html());
@@ -1028,11 +1033,13 @@ function getCrossrefVol(doi) {
                     $("div.diva2addtextchoicecol:contains('ISBN')").next().find('input').val(isbn); // klistrar in isbn från Crossref FUNKAR BARA OM MAN KLICKAR TVÅ GGR PÅ KNAPPEN ARGH!!
                     $('#monkeyupdates').html('<p style="color:green;">Lagt till ISBN:' + isbn + '</p>' + $('#monkeyupdates').html());
                     }
-                if (concAbs && ($("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html().trim()==="" || $("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html().trim()==="<p><br data-mce-bogus=\"1\"></p>")) { //om abstract i sektioner i crossref men inget abstract i DiVA
+                if (concAbs && isAbstractEmpty($("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first())) { //om abstract i sektioner i crossref men inget abstract i DiVA
+                    console.log('[DiVA] getCrossrefVol: Inserting concAbs into empty abstract iframe');
                     $("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html(concAbs); //klistrar in abstract från crossref
                     $('#monkeyupdates').html('<p style="color:green;">Lagt till abstract</p>' + $('#monkeyupdates').html());
                     }
-                if (!concAbs && abstract && ($("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html().trim()==="" || $("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html().trim()==="<p><br data-mce-bogus=\"1\"></p>")) { //om abstract i crossref men inte i DiVA
+                if (!concAbs && abstract && isAbstractEmpty($("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first())) { //om abstract i crossref men inte i DiVA
+                    console.log('[DiVA] getCrossrefVol: Inserting abstract into empty abstract iframe');
                    $("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html(abstract); //klistrar in abstract från crossref
                    $('#monkeyupdates').html('<p style="color:green;">Lagt till abstract</p>' + $('#monkeyupdates').html());
                    }
@@ -1133,6 +1140,26 @@ function getCrossrefAbs(doi) {
             }
         });
     };
+
+    /**
+     * Helper function to check if abstract iframe is empty
+     * Handles <p></p>, <p><br>, empty string, and editor placeholders
+     */
+    function isAbstractEmpty($iframe) {
+        var html = $iframe.contents().find("body").html();
+        if (!html) return true;
+        var trimmed = html.trim();
+        // Check for: empty string, <p></p>, <p><br> variants, <p><br data-mce-bogus="1"></p>, just whitespace/nbsp
+        if (trimmed === "" || 
+            trimmed === "<p></p>" || 
+            trimmed === "<p><br></p>" ||
+            trimmed === "<p><br data-mce-bogus=\"1\"></p>" ||
+            /^<p>\s*(&nbsp;|\s)*\s*<\/p>$/.test(trimmed) ||
+            /^<p><br\s*\/?>\s*<\/p>$/.test(trimmed)) {
+            return true;
+        }
+        return false;
+    }
 
     /**
      * Funktion för att initiera Apan
