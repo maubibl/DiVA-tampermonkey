@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     DiVA
-// @version      2.3.1.3_mau
+// @version      2.3.1.4_mau
 // @updateURL    https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @downloadURL  https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @description  En Apa för att hjälpa till med DiVA-arbetet på KTH Biblioteket/Mau
@@ -1543,22 +1543,28 @@ function getCrossrefAbs(doi) {
         ////////////////////////////////////////
         if (monkey_config.wos) {
             $('#WoSButtonjq').remove();
-            var WoSButtonjq = $('<button class="link" id="WoSButtonjq" type="button">Öppna i WoS</button>');
-            WoSButtonjq.on("click", function() {
-                var url = "https://proxy.mau.se/login?url=http://gateway.isiknowledge.com/gateway/Gateway.cgi?SrcApp=sfx&KeyUT=" +
-                    $("div.diva2addtextchoicecol:contains('ISI')").parent().find('input').val() +
-                    "&DestLinkType=FullRecord&SrcAuth=Name&DestApp=WOS&GWVersion=2";
-                window.open(url, '_blank');
-            })
-            $("div.diva2addtextchoicecol:contains('ISI')").before(WoSButtonjq)
+            var isiValue = $("div.diva2addtextchoicecol:contains('ISI')").parent().find('input').val();
+            if (isiValue && isiValue.trim() !== "") {
+                var WoSButtonjq = $('<button class="link" id="WoSButtonjq" type="button">Öppna i WoS</button>');
+                WoSButtonjq.on("click", function() {
+                    var url = "https://proxy.mau.se/login?url=https://gateway.webofknowledge.com/api/gateway?SrcApp=sfx&KeyUT=" +
+                        isiValue +
+                        "&DestLinkType=FullRecord&SrcAuth=Name&DestApp=WOS&GWVersion=2";
+                    window.open(url, '_blank');
+                })
+                $("div.diva2addtextchoicecol:contains('ISI')").before(WoSButtonjq)
+            }
 
             $('#wosapiButtonjq').remove();
-            var wosapiButtonjq = $('<button id="wosapiButtonjq" type="button" class="buttonload"><i class="fa fa-spinner fa-spin"></i>Uppdatera från WoS</button>');
-            wosapiButtonjq.on("mousedown", async function() {
-                event.preventDefault(); // Förhindra onblur
-                getWoS($("div.diva2addtextchoicecol:contains('DOI')").parent().find('input').val());
-            })
-            $("div.diva2addtextchoicecol:contains('ISI')").before(wosapiButtonjq)
+            var doiValue = $("div.diva2addtextchoicecol:contains('DOI')").parent().find('input').val();
+            if (doiValue && doiValue.trim() !== "") {
+                var wosapiButtonjq = $('<button id="wosapiButtonjq" type="button" class="buttonload"><i class="fa fa-spinner fa-spin"></i>Uppdatera från WoS</button>');
+                wosapiButtonjq.on("mousedown", async function() {
+                    event.preventDefault(); // Förhindra onblur
+                    getWoS(doiValue);
+                })
+                $("div.diva2addtextchoicecol:contains('ISI')").before(wosapiButtonjq)
+            }
         }
 
         ////////////////////////////////////
@@ -1567,14 +1573,17 @@ function getCrossrefAbs(doi) {
         //
         ////////////////////////////////////
         $('#openScopusButtonjq').remove();
-        var openScopusButtonjq = $('<button class="link" id="openScopusButtonjq" type="button">Öppna i Scopus</button>');
-        openScopusButtonjq.on("click", function() {
-            var url = "https://proxy.mau.se/login?url=https://www.scopus.com/record/display.url?origin=inward&partnerID=40&eid=" +
-                $("div.diva2addtextchoicecol:contains('ScopusID')").parent().find('input').val() +
-                "";
-            window.open(url, '_blank');
-        })
-        $("div.diva2addtextchoicecol:contains('ScopusID')").before(openScopusButtonjq)
+        var scopusIdValue = $("div.diva2addtextchoicecol:contains('ScopusID')").parent().find('input').val();
+        if (scopusIdValue && scopusIdValue.trim() !== "") {
+            var openScopusButtonjq = $('<button class="link" id="openScopusButtonjq" type="button">Öppna i Scopus</button>');
+            openScopusButtonjq.on("click", function() {
+                var url = "https://proxy.mau.se/login?url=https://www.scopus.com/record/display.url?origin=inward&partnerID=40&eid=" +
+                    scopusIdValue +
+                    "";
+                window.open(url, '_blank');
+            })
+            $("div.diva2addtextchoicecol:contains('ScopusID')").before(openScopusButtonjq)
+        }
 
         ////////////////////////////////////
         //
@@ -1619,12 +1628,15 @@ function getCrossrefAbs(doi) {
         ////////////////////////////////////
         if (monkey_config.scopus) {
             $('#scopusButtonjq').remove();
-            var scopusButtonjq = $('<button id="scopusButtonjq" type="button">Uppdatera från Scopus</button>');
-            scopusButtonjq.on("mousedown", async function() {
-                event.preventDefault(); // Förhindra onblur
-                getScopus($("div.diva2addtextchoicecol:contains('DOI')").parent().find('input').val());
-            })
-            $("div.diva2addtextchoicecol:contains('ScopusID')").before(scopusButtonjq)
+            var doiValue = $("div.diva2addtextchoicecol:contains('DOI')").parent().find('input').val();
+            if (doiValue && doiValue.trim() !== "") {
+                var scopusButtonjq = $('<button id="scopusButtonjq" type="button">Uppdatera från Scopus</button>');
+                scopusButtonjq.on("mousedown", async function() {
+                    event.preventDefault(); // Förhindra onblur
+                    getScopus(doiValue);
+                })
+                $("div.diva2addtextchoicecol:contains('ScopusID')").before(scopusButtonjq)
+            }
         }
 
         ////////////////////////////////////
@@ -1740,14 +1752,17 @@ function getCrossrefAbs(doi) {
         ////////////////////////////////////
 
         $('#openPubMedButtonjq').remove();
-        var openPubMedButtonjq = $('<button class="link" id="openPubMedButtonjq" type="button">Öppna i PubMed</button>');
-        openPubMedButtonjq.on("click", function() {
-            var url = "https://www.ncbi.nlm.nih.gov/pubmed/" +
-                $("div.diva2addtextchoicecol:contains('PubMedID')").parent().find('input').val() +
-                "";
-            window.open(url, '_blank');
-        })
-        $("div.diva2addtextchoicecol:contains('PubMedID')").before(openPubMedButtonjq)
+        var pubmedIdValue = $("div.diva2addtextchoicecol:contains('PubMedID')").parent().find('input').val();
+        if (pubmedIdValue && pubmedIdValue.trim() !== "") {
+            var openPubMedButtonjq = $('<button class="link" id="openPubMedButtonjq" type="button">Öppna i PubMed</button>');
+            openPubMedButtonjq.on("click", function() {
+                var url = "https://www.ncbi.nlm.nih.gov/pubmed/" +
+                    pubmedIdValue +
+                    "";
+                window.open(url, '_blank');
+            })
+            $("div.diva2addtextchoicecol:contains('PubMedID')").before(openPubMedButtonjq)
+        }
 
         //////////////////////////////////////////////////
         //
