@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     DiVA
-// @version      2.3.1.4_mau
+// @version      2.7_mau
 // @updateURL    https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @downloadURL  https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @description  En Apa för att hjälpa till med DiVA-arbetet på KTH Biblioteket/Mau
@@ -39,6 +39,7 @@
 // @connect  www.semanticscholar.org
 // @connect  www.google.com
 // @connect  eutils.ncbi.nlm.nih.gov
+// @connect  ep.liu.se
 
 // @noframes
 // ==/UserScript==
@@ -398,6 +399,92 @@ var monkey_config = {
                 }
             });
         }
+    }
+    
+    /**
+     * LiU Subject Classifier 2025 – call with abstract text
+     * and write results into #monkeyupdates.
+     */
+    // LiU Subject Classifier 2025 med GM_xmlhttpRequest (CORS-safe)
+    function classifyWithLiU(abstractText) {
+        if (!abstractText || abstractText.split(/\s+/).length < 50) {
+            $("#monkeyupdates").html(
+                '<div><div class="updateheader"></div><div><p style="color:red">LiU: minst 50 ord i abstract behövs.</p></div></div>'
+            );
+            return;
+        }
+
+        $("#monkeyupdates").html(
+            '<div><div class="updateheader"></div><div><p style="color:blue">LiU analyserar abstract…</p></div></div>'
+        );
+
+        GM_xmlhttpRequest({
+            method: "POST",
+            url: "https://ep.liu.se/subject-classifier/getData.aspx",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+            },
+            data: "text=" + encodeURIComponent(abstractText),
+            onload: function(response) {
+                try {
+                    if (response.status !== 200) {
+                        $("#monkeyresultswrapper_right i").css("display", "none");
+                        $('#monkeyresults_right').html(
+                            '<div>LiU: fel – ' + response.status + '</div>'
+                        );
+                        $("#monkeytalk").html("Kunde inte hämta klassning från LiU.");
+                        return;
+                    }
+
+                    var data = JSON.parse(response.responseText || "{}");
+
+                    if (!data || !data.subjects || !data.subjects.length) {
+                        $("#monkeyresultswrapper_right i").css("display", "none");
+                        $('#monkeyresults_right').html(
+                            '<div>Inga förslag från LiU.</div>'
+                        );
+                        $("#monkeytalk").html("LiU svarade inte med några klassifikationer.");
+                        return;
+                    }
+
+                    var subjects = data.subjects.sort(function(a, b) {
+                        return (b.journalscore || 0) - (a.journalscore || 0);
+                    });
+
+                    var html = '<div><div class="resultsheader">Klassning från LiU</div><br />';
+
+                    subjects.slice(0, 5).forEach(function(s, idx) {
+                        html += '<div class="liu-suggestion">';
+                        html += '<strong>Förslag ' + (idx + 1) + '</strong><br />';
+                        html += '<div>Värde: ' + (s.score || '') + '</div>';
+                        html += '<div>Ämne (sv): ' + (s.subjectSw || '') +
+                            ' (' + (s.code || '') + ')</div>';
+                        html += '<div>Ämne (en): ' + (s.subjectEn || '') + '</div>';
+                        html += '<br /></div>';
+                    });
+
+                    html += '</div>';
+
+                    $("#monkeyresultswrapper_right i").css("display", "none");
+                    $('#monkeyresults_right').html(html);
+                    $("#monkeytalk").html("LiU svarade... se resultatet här nedanför");
+                } catch (e) {
+                    console.error("LiU JSON parse error", e, response);
+                    $("#monkeyresultswrapper_right i").css("display", "none");
+                    $('#monkeyresults_right').html(
+                        '<div>LiU: fel – kunde inte tolka svaret.</div>'
+                    );
+                    $("#monkeytalk").html("Kunde inte tolka LiU-svaret.");
+                }
+
+            },
+            onerror: function(err) {
+                console.error("LiU classifier GM error:", err);
+                $("#monkeyupdates").html(
+                    '<div><div class="updateheader"></div><div><p style="color:red">LiU: fel – nätverksfel.</p></div></div>'
+                );
+            }
+        });
     }
     /**
      * Hämta info från ORCiD
@@ -1310,6 +1397,42 @@ function getCrossrefAbs(doi) {
         })
         $("div.diva2addtextchoice2:contains('Ingår i bok'), div.diva2addtextchoice2:contains('Part of book')").parent().before(booktitlecaseButtonjq)
 
+       ///////////////////////////////////////////////////////////
+        //
+        // Skapa en knapp vid titelfältet för att söka på
+        // titel hos Crossref https://search.crossref.org
+        //
+        ///////////////////////////////////////////////////////////
+
+        $('#crButtonjq').remove();
+
+        var crButtonjq = $('<button class="link" id="crButtonjq" type="button">Titel -> Crossref</button>');
+
+        crButtonjq.on("mousedown", function(event) {
+            event.preventDefault(); // Förhindra onblur
+
+            var maintitle = $.trim(
+                $maintitleiframe
+                .contents()
+                .find("body")
+                .text()
+                .replace(/\s+/g, ' ') // normalisera whitespace
+            );
+
+            if (!maintitle) {
+                return;
+            }
+
+            // Bygg URL som liknar UI:et: låt URLSearchParams hantera encoding
+            var params = new URLSearchParams();
+            params.set('q', maintitle);
+            params.set('from_ui', 'yes');
+
+            var url = "https://search.crossref.org/search/works?" + params.toString();
+            window.open(url, '_blank');
+        });
+        $(caseButtonjq).after(crButtonjq);
+
         ///////////////////////////////////////////////////////////
         //
         // Skapa en knapp vid alternativtitelfältet,
@@ -1463,7 +1586,7 @@ function getCrossrefAbs(doi) {
             setValues: ($el, vals) => $el.val(vals[0])
         });
 
-        ////////////////////////////////////
+                ////////////////////////////////////
         //
         // Knappar vid "Annan serie"/"Other series" - ISSN
         //
@@ -1473,7 +1596,7 @@ function getCrossrefAbs(doi) {
             $('#issnTitleButtonjq').remove();
             var issnTitleButtonjq = $('<button class="link" id="issnTitleButtonjq" type="button">Öppna i ISSN Portal på serietitel</button>');
             issnTitleButtonjq.on("click", function() {
-                var url = "https://portal.issn.org/api/search?search[]=MUST=default=" +
+                var url = "https://portal.issn.org/search?search=" +
                     $("div.diva2addtextchoicecol:contains('ISSN')").parent().find('input').eq(0).val() +
                     "";
                 window.open(url, '_blank');
@@ -1485,14 +1608,33 @@ function getCrossrefAbs(doi) {
             $('#issnButtonjq').remove();
             var issnButtonjq = $('<button class="link" id="issnButtonjq" type="button">Öppna i ISSN Portal på ISSN</button>');
             issnButtonjq.on("click", function() {
-                var url = "https://portal.issn.org/api/search?search[]=SHOULD=allissnbis=%22" +
-                    $("div.diva2addtextchoicecol:contains('ISSN')").parent().find('input').eq(1).val() + "%22" +
+                var url = "https://portal.issn.org/search?search=" +
+                    $("div.diva2addtextchoicecol:contains('ISSN')").parent().find('input').eq(1).val() +
                     "&search[]=SHOULD=allissnbis=%22" + $("div.diva2addtextchoicecol:contains('ISSN')").parent().find('input').eq(2).val() +
                     "%22";
                 window.open(url, '_blank');
             })
         } else {}
         $("div.diva2addtextchoicecol:contains('ISSN')").parent().find('input').eq(0).after(issnButtonjq)
+
+
+        ////////////////////////////////////
+        //
+        // Knappar vid "Annan tidskrift"/"Other journal" - ISSN
+        //
+        ////////////////////////////////////
+
+        if ($("div.diva2addtextareajournal:contains('Other journal'), div.diva2addtextareajournal:contains('Annan tidskrift')").find('input').eq(0).val() != "") { // ingen mening att visa knappar om det inte står något i fältet
+            $('#issnJournalTitleButtonjq').remove();
+            var issnJournalTitleButtonjq = $('<button class="link" id="issnJournalTitleButtonjq" type="button">Öppna i ISSN Portal på tidskriftsnamn</button>');
+            issnJournalTitleButtonjq.on("click", function() {
+                var url = "https://portal.issn.org/search?search=" +
+                    $("div.diva2addtextareajournal:contains('Other journal'), div.diva2addtextareajournal:contains('Annan tidskrift')").find('input').eq(0).val() +
+                    "";
+                window.open(url, '_blank');
+            })
+        } else {}
+        $("div.diva2addtextchoicecol:contains('Journal title'), div.diva2addtextchoicecol:contains('Tidskriftens titel')").before(issnJournalTitleButtonjq)
 
         ///////////////////////////////////////////////////////////////
         //
@@ -1689,61 +1831,176 @@ function getCrossrefAbs(doi) {
                 $("div.diva2addtextchoicebr:contains('Abstract')").parent().before(crossrefAbsButtonjq);
             }
 
-        ///////////////////////////////////////////////////
+                ///////////////////////////////////////////////////
         //
-        /*  Klassificering från Swepub finns integrerad i DiVA nu = kan tas bort (även om jag tycker att den rosa knappen är snyggare)  2021-02-24 /Anders W
+        //  Klassificering från Swepub finns integrerad i DiVA nu = kan tas bort (även om jag tycker att den rosa knappen är snyggare)  2021-02-24 /Anders W
         //
         // Knapp för att kolla klassificering från Swepub
         //
         ///////////////////////////////////////////////////
 
+        // =========================
+        // Swepub klassifikation
+        // =========================
         $('#classButtonjq').remove();
         var classButtonjq = $('<button id="classButtonjq" type="button">Klassifikation från Swepub</button>');
+
         classButtonjq.on("click", function() {
-            var title = $("div.diva2addtextchoicecol:contains('Huvudtitel:') , div.diva2addtextchoicecol:contains('Main title:')").parent().next().find('iframe').first().contents().find("body").html();
-            var keywords = $("div.diva2addtextchoicebr:contains('Nyckelord') , div.diva2addtextchoicebr:contains('Keywords')").parent().find('input').val()
-            var abstract = $("div.diva2addtextchoicebr:contains('Abstract')").parent().parent().find('iframe').first().contents().find("body").html().replace(/<p>/g, "").replace(/<\/p>/g, "");
+            var title = $("div.diva2addtextchoicecol:contains('Huvudtitel:') , div.diva2addtextchoicecol:contains('Main title:')")
+                .parent()
+                .next()
+                .find('iframe')
+                .first()
+                .contents()
+                .find("body")
+                .text()
+                .trim();
+
+            var keywords = $("div.diva2addtextchoicebr:contains('Nyckelord') , div.diva2addtextchoicebr:contains('Keywords')")
+                .parent()
+                .find('input')
+                .val() || "";
+
+            var abstract = $("div.diva2addtextchoicebr:contains('Abstract')")
+                .parent()
+                .parent()
+                .find('iframe')
+                .first()
+                .contents()
+                .find("body")
+                .text()
+                .trim();
+
+            console.log("TITLE:", title);
+            console.log("ABSTRACT:", abstract);
+            console.log("KEYWORDS:", keywords);
+
+            if (!title && !abstract && !keywords) {
+                alert("Ingen titel/abstract/nyckelord att skicka till Swepub.");
+                return;
+            }
+
             $.ajax({
-                url: 'https://bibliometri.swepub.kb.se/api/v1/classify/',
+                url: 'https://bibliometri.swepub.kb.se/api/v2/classify',
                 contentType: 'application/json',
-                dataType: 'JSON',
-                type: 'post',
+                dataType: 'json',
+                type: 'POST',
                 data: JSON.stringify({
+                    title: title,
                     abstract: abstract,
-                    classes: 3,
                     keywords: keywords,
                     level: 5,
-                    title: title
+                    classes: 5
                 }),
                 success: function(response) {
-                    console.log(response);
-                    var json = response.data;
-                    var html = '<div><div class="resultsheader">Klassning från Swepub</div><br /><div> Värde: ' + JSON.stringify(response.suggestions[0].score) + '</div>';
-                    html += '<div>Ämne:  ' + JSON.stringify(response.suggestions[0].swe.prefLabel) + '</div><br />';
-                    html += '<div>Ämnesträd:  ' + JSON.stringify(response.suggestions[0].swe._topic_tree).replace(/\\/g, "").replace(/"\[/g, "").replace(/\]"/g, "") + '</div><br />';
-                    if (response.suggestions[1] !== undefined) {
-                        html += '<div>Värde: ' + JSON.stringify(response.suggestions[1].score) + '</div>';
-                        html += '<div>Ämne:  ' + JSON.stringify(response.suggestions[1].swe.prefLabel) + '</div><br />'
-                        html += '<div>Ämnesträd:  ' + JSON.stringify(response.suggestions[1].swe._topic_tree).replace(/\\/g, "").replace(/"\[/g, "").replace(/\]"/g, "") + '</div><br />'
-                    };
-                    if (response.suggestions[2] !== undefined) {
-                        html += '<div>Värde: ' + JSON.stringify(response.suggestions[2].score) + '</div>';
-                        html += '<div>Ämne:  ' + JSON.stringify(response.suggestions[2].swe.prefLabel) + '</div><br />'
-                        html += '<div>Ämnesträd:  ' + JSON.stringify(response.suggestions[2].swe._topic_tree).replace(/\\/g, "").replace(/"\[/g, "").replace(/\]"/g, "") + '</div><br />'
-                    };
+                    console.log("Swepub response:", response);
+
+                    var suggestions = response.suggestions || [];
+                    if (!suggestions.length) {
+                        $('#monkeyresults_right').html('<div>Inga förslag från Swepub.</div>');
+                        $("#monkeytalk").html("Swepub svarade inte med några klassifikationer.");
+                        return;
+                    }
+
+                    var html = '<div><div class="resultsheader">Klassning från Swepub</div><br />';
+
+                    suggestions.slice(0, 3).forEach(function(s, idx) {
+                        var score = s._score ?? '';
+                        var labels = s.prefLabelByLang || {};
+                        var labelSv = labels.sv || '';
+                        var labelEn = labels.en || '';
+                        var code = s.code || '';
+
+                        var lvl2 = s.broader || {};
+                        var lvl1 = lvl2.broader || {};
+                        var lvl2Code = lvl2.code || '';
+                        var lvl1Code = lvl1.code || '';
+                        var lvl2LabelSv = (lvl2.prefLabelByLang || {}).sv || '';
+                        var lvl1LabelSv = (lvl1.prefLabelByLang || {}).sv || '';
+
+                        html += '<div class="swepub-suggestion">';
+                        html += '<strong>Förslag ' + (idx + 1) + '</strong><br />';
+                        html += '<div>Värde: ' + score + '</div>';
+                        html += '<div>Ämne (sv): <span class="subject-label">' +
+                            labelSv + '</span> (' + code + ')</div>';
+                        html += '<div>Ämne (en): ' + labelEn + '</div>';
+                        html += '<div>Nivå 2: ' + lvl2LabelSv + ' (' + lvl2Code + ')</div>';
+                        html += '<div>Nivå 1: ' + lvl1LabelSv + ' (' + lvl1Code + ')</div>';
+                        html += '<button type="button" class="copy-subject" ' +
+                            'data-label="' + $('<div>').text(labelSv).html() + '">Kopiera ämne</button>';
+                        html += '<br /><br /></div>';
+                    });
 
                     $("#monkeyresultswrapper_right i").css("display", "none");
                     $('#monkeyresults_right').html(html);
                     $("#monkeytalk").html("Swepub svarade... se resultatet här nedanför");
 
+                    // Copy handler click "Kopiera ämne" to put labelSv on clipboard
+                    $('#monkeyresults_right')
+                        .off('click.copySubject')
+                        .on('click.copySubject', '.copy-subject', function() {
+                            var label = $(this).data('label');
+                            if (!label) return;
+                            navigator.clipboard.writeText(label)
+                                .then(function() {
+                                    console.log('Copied:', label);
+                                    $("#monkeytalk").html(
+                                        "Kopierade: " + label + " (du kan nu klistra in var du vill)."
+                                    );
+                                })
+                                .catch(function(err) {
+                                    console.error('Copy failed:', err);
+                                    alert("Kunde inte kopiera till urklipp (kolla browser-behörigheter).");
+                                });
+                        })
+                        .off('click.fillPopup')
+                        .on('click.fillPopup', '.fill-popup', function() {
+                            var label = $(this).data('label');
+                            console.log('fill-popup clicked, label =', label);
+                            if (!label) return;
+                            fillDivaPopupSearch(label);
+                        });
+
+
+                },
+                error: function(xhr, status, err) {
+                    console.error("Swepub classify error", status, err, xhr.responseText);
+                    $('#monkeyresults_right').html('<div>Fel vid klassificering mot Swepub.</div>');
+                    $("#monkeytalk").html("Kunde inte hämta klassning från Swepub.");
                 }
-            })
+            });
+        });
 
-        })
+        // Insert the button before the “Nationell ämneskategori” field
+        $("div.diva2addtextchoice2:contains('Nationell ämneskategori') , div.diva2addtextchoice2:contains('National subject category')")
+            .parent()
+            .before(classButtonjq);
 
-        $("div.diva2addtextchoice2:contains('Nationell ämneskategori') , div.diva2addtextchoice2:contains('National subject category')").parent().before(classButtonjq);
+        //////////////////////////////////////////////////
+        // LiU Subject Classifier – button by Abstract
+        //////////////////////////////////////////////////
 
-		*/
+
+        $('#liuClassifierButton').remove();
+        var liuClassifierButton = $('<button id="liuClassifierButton" type="button">LiU subject classifier</button>');
+
+        liuClassifierButton.on("click", function() {
+            // Använd EXAKT samma källa för abstract som i Swepub-koden
+            var abstract = $("div.diva2addtextchoicebr:contains('Abstract')")
+                .parent()
+                .parent()
+                .find('iframe')
+                .first()
+                .contents()
+                .find("body")
+                .text()
+                .trim();
+
+            classifyWithLiU(abstract);
+        });
+
+        // Placera LiU-knappen direkt efter Swepub-knappen
+        $(liuClassifierButton).insertAfter('#classButtonjq');
 
         ////////////////////////////////////
         //
