@@ -2255,10 +2255,10 @@ function getCrossrefAbs(doi) {
         tempContainer.contents().each(function() {
             var thiz = this;
             var html = '<div><div class="updateheader"></div>';
-            var newabs = $(thiz).text();
+            var newabs = $(thiz).html();
             var newabs2 = newabs.replace(/\.?\. ©.*$/, ".").replace(/\.?\.©.*$/, ".").replace(/\.?\. \(C\).*$/i, ".").replace(/\.?\.\(C\).*$/i, ".").replace(/\.?\. Copyright \(C\).*$/i, ".").replace(/\.?\. Copyright ©.*$/, ".");
 
-            $(thiz).text(newabs2);
+            $(thiz).html(newabs2);
 
             if (newabs !== newabs2) {
                 html += '<div><p style="color:green;">Uppdaterat "Abstract"</p></div>';
