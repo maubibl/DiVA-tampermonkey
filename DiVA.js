@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     DiVA
-// @version      2.7_mau
+// @version      2.7.1_mau
 // @updateURL    https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @downloadURL  https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @description  En Apa för att hjälpa till med DiVA-arbetet på KTH Biblioteket/Mau
@@ -283,7 +283,107 @@ var monkey_config = {
         $('#monkeyresults').html('<p>' + response.statusText + '</p>');
         $('#monkeytalk').html('Nu blev det fel!');
     }
+     /**
+     * Funktion för att hantera konstiga/osynliga tecken
+     *mau NY 260731
+     *
+     **/
+   function cleanText(text) {
+    if (!text) return text;
 
+    text = text
+        .normalize("NFC")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/[\u00A0\u200B\u200C\u200D\u202F\uFEFF]/g, "")
+        .replace(/\u00AD/g, "");
+
+    return text
+        .replace(/[—−‑–]/g, "-")
+        .replace(/ - /g, " – ")
+        .replace(/[\r\n\t]/g, " ")
+        .replace(/\s+/g, " ")
+        .replace(/[\u2018\u2019\u201a\u201b\u2032\u2035]/g, "'")
+        .replace(/[\u201C\u201D\u201E\u201F\u2033\u2034\u2036\u2037]/g, '"')
+        .replace(/^[;:,]+\s*/g, "")
+        .replace(/([;:,])\1+/g, "$1")
+        .replace(/\s*([;:,])\s*/g, "$1 ")
+        .trim();
+   }
+     /**
+     * Förenklad hantering av organisationskonstigheter
+     *mau NY 260731
+     *
+     **/
+function normalizeOrganization(text) {
+
+    text = cleanText(text);
+
+    const replacements = {
+        Bracke: "Bräcke",
+        Skondal: "Sköndal",
+        Hogskola: "Högskola",
+        Linkoping: "Linköping",
+        Malardalen: "Mälardalen",
+        Orebro: "Örebro",
+        Vasteras: "Västerås",
+        Goteborg: "Göteborg",
+        Norrkoping: "Norrköping",
+        Vaxjo: "Växjö",
+        Umea: "Umeå",
+        Lulea: "Luleå",
+        Ostersund: "Östersund",
+        Trollhattan: "Trollhättan",
+        Jonkoping: "Jönköping",
+        Malmoe: "Malmö",
+        Malmo: "Malmö",
+        Sodertorn: "Södertörn",
+        Gavle: "Gävle",
+        Skovde: "Skövde",
+        Boras: "Borås",
+        Sodertalje: "Södertälje",
+        Borlange: "Borlänge",
+        Harnosand: "Härnösand",
+        Skelleftea: "Skellefteå",
+        Sjofart: "Sjöfart",
+        Molnlycke: "Mölnlycke",
+        Domsjo: "Domsjö",
+        Varobacka: "Väröbacka",
+        Nykoping: "Nyköping",
+        Ornskoldsvik: "Örnsköldsvik",
+        Molndal: "Mölndal",
+        "Upplands Vasby": "Upplands Väsby",
+        Lowenstromska: "Löwenströmska",
+        Skarholmen: "Skärholmen",
+        Tjarno: "Tjärnö",
+        "Arrhenius Vag": "Arrhenius Väg",
+        Lantmateri: "Lantmäteri",
+        Kraftnat: "Kraftnät",
+        Stromstad: "Strömstad",
+        Stralsakerhetsmyndigheten: "Strålsäkerhetsmyndigheten",
+        "Vastra Gotaland": "Västra Götaland",
+        Tromso: "Tromsø",
+        "Sodra Alvsborg": "Södra Älvsborg",
+        Varmland: "Värmland",
+        Vardal: "Vårdal",
+        Skane: "Skåne",
+        Pitea: "Piteå",
+        Ostergotland: "Östergötland",
+        Kavlinge: "Kävlinge",
+        Hassleholm: "Hässleholm",
+        Gotaland: "Götaland",
+        Gastrikland: "Gästrikland",
+        Folktandvarden: "Folktandvården",
+        Branemark: "Brånemark"
+    };
+
+    for (const [from, to] of Object.entries(replacements)) {
+        text = text.replaceAll(from, to);
+    }
+
+    return text
+        .replace(/\s*https:\/\/ror\.org\/[0-9a-z]{9}/g, "")
+        .replace(/[.;,]\s*$/, "");
+}
     /**
      * Funktion för att omvandla till title case
      *mau NY rev 251203
@@ -1062,7 +1162,7 @@ function getCrossrefVol(doi) {
                         // Iterate through each jats:p element within the jats:abstract
                         abs2.find('jats\\:p').each(function() {
                         // Get the paragraph text
-                        var paragraph = $(this).text();
+                        var paragraph = cleanText($(this).text());
                         // Concatenate the title and paragraph with formating
                         abstract += '<p>' + paragraph + '</p>';
                          });
@@ -1073,8 +1173,8 @@ function getCrossrefVol(doi) {
                         // Iterate through each jats:sec element within the jats:abstract
                         abs2.find('jats\\:sec').each(function() {
                         // Get the title and paragraph text
-                        var title = $(this).find('jats\\:title').text();
-                        var paragraph = $(this).find('jats\\:p').text();
+                        var title = cleanText($(this).find('jats\\:title').text());
+                        var paragraph = cleanText($(this).find('jats\\:p').text());
                         // Concatenate the title and paragraph with formating
                         concAbs += '<p><strong>'+ title + ':</strong> ' + paragraph + '</p>';
                          });
@@ -1164,7 +1264,7 @@ function getCrossrefAbs(doi) {
                         // Iterate through each jats:p element within the jats:abstract
                         abs2.find('jats\\:p').each(function() {
                         // Get the paragraph text
-                        var paragraph = $(this).text();
+                        var paragraph = cleanText($(this).text());
                         // Concatenate the title and paragraph with formating
                         abstract += '<p>' + paragraph + '</p>';
                          });
@@ -1174,12 +1274,19 @@ function getCrossrefAbs(doi) {
                         var concAbs = "";
                         // Iterate through each jats:sec element within the jats:abstract
                         abs2.find('jats\\:sec').each(function() {
-                        // Get the title and paragraph text
-                        var title = $(this).find('jats\\:title').text();
-                        var paragraph = $(this).find('jats\\:p').text();
-                        // Concatenate the title and paragraph with formating
-                        concAbs += '<p><strong>'+ title + ':</strong> ' + paragraph + '</p>';
-                         });
+
+                            var title =
+                                cleanText(
+                                    $(this).find('jats\\:title').text()
+                                );
+
+                            var paragraph =
+                                cleanText(
+                                    $(this).find('jats\\:p').text()
+                                );
+
+                            concAbs += '<p><strong>' + title + ':</strong> ' + paragraph + '</p>';
+                        });
                         // Trim any extra whitespace at the end
                        concAbs = concAbs.trim();
 
@@ -2066,7 +2173,7 @@ function getCrossrefAbs(doi) {
             var keywordsButtonjq = $('<button id="keywordsButtonjq' + i + '" type="button">;->,</button>');
             keywordsButtonjq.on("click", function() {
                 var keywords = $(thiz).parent().find('input').val();
-                var altkeywords = keywords.replace(/;/g, ",").replace(/\|/g, ",").replace(/ ,/g, ",");
+                var altkeywords = keywords.replace(/;/g, ",").replace(/\|/g, ",").replace(/•/g,",").replace(/ ,/g, ",");
                 $(thiz).parent().find('input').val(altkeywords);
                 $(thiz).parent().find('input').focus();
                 $(this).focus();
@@ -2216,20 +2323,7 @@ function getCrossrefAbs(doi) {
             var thiz = this;
             var html = '<div><div class="updateheader"></div>';
             var neworg = $(thiz).next().find('input').val();
-            var neworg2 = neworg.trim().replace(/ {4,}/g,'; ').replace(/\s*;(?!\s*$)\s*/g, '; ').replace(/\s*,(?!\s*$)\s*/g, ', ').replace(/\.$/, "").replace(/\;$/, "").replace(/\,$/, "").replace(/\.\;/g, ";")
-            .replace(/\; \;/g,";").replace(/ö/g, "ö").replace(/Bracke/g, "Bräcke").replace(/Skondal/g, "Sköndal").replace(/Hogskola/g, "Högskola").replace(/Linkoping/g, "Linköping")
-            .replace(/Malardalen/g, "Mälardalen").replace(/Orebro/g, "Örebro").replace(/Vasteras/g, "Västerås").replace(/Goteborg/g, "Göteborg").replace(/Norrkoping/g, "Norrköping")
-            .replace(/Vaxjo/g, "Växjö").replace(/Umea/g, "Umeå").replace(/Lulea/g, "Luleå").replace(/Ostersund/g, "Östersund").replace(/Trollhattan/g, "Trollhättan")
-            .replace(/Jonkoping/g, "Jönköping").replace(/Malmoe/g, "Malmö").replace(/Malmo/g, "Malmö").replace(/Sodertorn/g, "Södertörn").replace(/Gavle/g, "Gävle").replace(/Skovde/g, "Skövde")
-            .replace(/Boras/g, "Borås").replace(/Sodertalje/g, "Södertälje").replace(/Borlange/g, "Borlänge").replace(/Harnosand/g, "Härnösand").replace(/Skelleftea/g, "Skellefteå")
-            .replace(/Sjofart/g, "Sjöfart").replace(/Molnlycke/g, "Mölnlycke").replace(/Domsjo/g, "Domsjö").replace(/Varobacka/g, "Väröbacka").replace(/Sodra Innovat/g, "Södra Innovat")
-            .replace(/Nykoping/g, "Nyköping").replace(/Ornskoldsvik/g, "Örnsköldsvik").replace(/Molndal/g, "Mölndal").replace(/Upplands Vasby/g, "Upplands Väsby")
-            .replace(/Lowenstromska/g, "Löwenströmska").replace(/Skarholmen/g, "Skärholmen").replace(/Tjarno/g, "Tjärnö").replace(/Arrhenius Vag/g, "Arrhenius Väg")
-            .replace(/Lantmateri/g, "Lantmäteri").replace(/Kraftnat/g, "Kraftnät").replace(/Stromstad/g, "Strömstad").replace(/Stralsakerhetsmyndigheten/g, "Strålsäkerhetsmyndigheten")
-            .replace(/Vastra Gotaland/g, "Västra Götaland").replace(/Tromso/g, "Tromsø").replace(/Sodra Alvsborg/g, "Södra Älvsborg").replace(/Varmland/g, "Värmland").replace(/Vardal/g, "Vårdal")
-            .replace(/Skane/g, "Skåne").replace(/Pitea/g, "Piteå").replace(/Ostergotland/g, "Östergötland").replace(/Kavlinge/g, "Kävlinge").replace(/Hassleholm/g, "Hässleholm")
-            .replace(/Gotaland/g, "Götaland").replace(/Gastrikland/g, "Gästrikland").replace(/Folktandvarden/g, "Folktandvården").replace(/Branemark/g, "Brånemark")
-            .replace(/\s*https:\/\/ror\.org\/[0-9a-z]{9}/g, "").replace(/\.$/, '');
+            var neworg2 = normalizeOrganization(neworg);
             $(thiz).next().find('input').val(neworg2);
             if (neworg != neworg2) {
                 html += '<div><p style="color:green;">Uppdaterat "Annan Organisation"</p></div>';
@@ -2256,7 +2350,7 @@ function getCrossrefAbs(doi) {
             var thiz = this;
             var html = '<div><div class="updateheader"></div>';
             var newabs = $(thiz).text();
-            var newabs2 = newabs.replace(/\.?\. ©.*$/, ".").replace(/\.?\.©.*$/, ".").replace(/\.?\. \(C\).*$/i, ".").replace(/\.?\.\(C\).*$/i, ".").replace(/\.?\. Copyright \(C\).*$/i, ".").replace(/\.?\. Copyright ©.*$/, ".");
+            var newabs2 = cleanText(newabs).replace(/\.?\. ©.*$/, ".").replace(/\.?\.©.*$/, ".").replace(/\.?\. \(C\).*$/i, ".").replace(/\.?\.\(C\).*$/i, ".").replace(/\.?\. Copyright \(C\).*$/i, ".").replace(/\.?\. Copyright ©.*$/, ".");
 
             $(thiz).text(newabs2);
 
@@ -2679,7 +2773,7 @@ function getCrossrefAbs(doi) {
                 if (!/\.{2,}$/.test(content)) {
                     cleanedContent = cleanedContent.replace(/\.$/, '');
                 }
-                cleanedContent = cleanedContent.replace(/[\u2018\u2019\u201a\u201b\u2032\u2035]/g, "'").replace(/[\u201C\u201D\u201E\u201F\u2033\u2034\u2036\u2037]/g, '"');
+                cleanedContent = cleanText(cleanedContent);
                 body.html(cleanedContent);
 
                 if (content !== cleanedContent) {
