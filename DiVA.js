@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name     DiVA
-// @version      2.7.2_mau
+// @version      2.7.3
 // @updateURL    https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @downloadURL  https://raw.githubusercontent.com/maubibl/DiVA-tampermonkey/main/DiVA.js
 // @description  En Apa för att hjälpa till med DiVA-arbetet på KTH Biblioteket/Mau
@@ -304,9 +304,9 @@ var monkey_config = {
         .replace(/\s+/g, " ")
         .replace(/[\u2018\u2019\u201a\u201b\u2032\u2035]/g, "'")
         .replace(/[\u201C\u201D\u201E\u201F\u2033\u2034\u2036\u2037]/g, '"')
+        .replace(/\.;/g, ";")
         .replace(/^[;:,]+\s*/g, "")
         .replace(/([;:,])\1+/g, "$1")
-        .replace(/\.;/g, ";")
         .replace(/\s*([;:,])\s*/g, "$1 ")
         .trim();
    }
@@ -320,62 +320,63 @@ function normalizeOrganization(text) {
     text = cleanText(text);
 
     const replacements = {
-        Bracke: "Bräcke",
-        Skondal: "Sköndal",
-        Hogskola: "Högskola",
-        Linkoping: "Linköping",
-        Malardalen: "Mälardalen",
-        Orebro: "Örebro",
-        Vasteras: "Västerås",
-        Goteborg: "Göteborg",
-        Norrkoping: "Norrköping",
-        Vaxjo: "Växjö",
-        Umea: "Umeå",
-        Lulea: "Luleå",
-        Ostersund: "Östersund",
-        Trollhattan: "Trollhättan",
-        Jonkoping: "Jönköping",
-        Malmoe: "Malmö",
-        Malmo: "Malmö",
-        Sodertorn: "Södertörn",
-        Gavle: "Gävle",
-        Skovde: "Skövde",
-        Boras: "Borås",
-        Sodertalje: "Södertälje",
-        Borlange: "Borlänge",
-        Harnosand: "Härnösand",
-        Skelleftea: "Skellefteå",
-        Sjofart: "Sjöfart",
-        Molnlycke: "Mölnlycke",
-        Domsjo: "Domsjö",
-        Varobacka: "Väröbacka",
-        Nykoping: "Nyköping",
-        Ornskoldsvik: "Örnsköldsvik",
-        Molndal: "Mölndal",
-        "Upplands Vasby": "Upplands Väsby",
-        Lowenstromska: "Löwenströmska",
-        Skarholmen: "Skärholmen",
-        Tjarno: "Tjärnö",
         "Arrhenius Vag": "Arrhenius Väg",
-        Lantmateri: "Lantmäteri",
-        Kraftnat: "Kraftnät",
-        Stromstad: "Strömstad",
-        Stralsakerhetsmyndigheten: "Strålsäkerhetsmyndigheten",
-        "Vastra Gotaland": "Västra Götaland",
-        Tromso: "Tromsø",
-        "Sodra Alvsborg": "Södra Älvsborg",
-        Varmland: "Värmland",
-        Vardal: "Vårdal",
-        Skane: "Skåne",
-        Pitea: "Piteå",
-        Ostergotland: "Östergötland",
-        Kavlinge: "Kävlinge",
-        Hassleholm: "Hässleholm",
-        Gotaland: "Götaland",
-        Gastrikland: "Gästrikland",
+        Boras: "Borås",
+        Borlange: "Borlänge",
+        Bracke: "Bräcke",
+        Branemark: "Brånemark",
+        Domsjo: "Domsjö",
         Folktandvarden: "Folktandvården",
-        Branemark: "Brånemark"
-    };
+        Gastrikland: "Gästrikland",
+        Gavle: "Gävle",
+        Gotaland: "Götaland",
+        Goteborg: "Göteborg",
+        Harnosand: "Härnösand",
+        Hassleholm: "Hässleholm",
+        Hogskola: "Högskola",
+        Hogskole: "Høgskole",
+        Jonkoping: "Jönköping",
+        Kavlinge: "Kävlinge",
+        Kraftnat: "Kraftnät",
+        Lantmateri: "Lantmäteri",
+        Linkoping: "Linköping",
+        Lowenstromska: "Löwenströmska",
+        Lulea: "Luleå",
+        Malardalen: "Mälardalen",
+        Malmo: "Malmö",
+        Malmoe: "Malmö",
+        Molndal: "Mölndal",
+        Molnlycke: "Mölnlycke",
+        Norrkoping: "Norrköping",
+        Nykoping: "Nyköping",
+        Orebro: "Örebro",
+        Ornskoldsvik: "Örnsköldsvik",
+        Ostergotland: "Östergötland",
+        Ostersund: "Östersund",
+        Pitea: "Piteå",
+        Sjofart: "Sjöfart",
+        Skane: "Skåne",
+        Skarholmen: "Skärholmen",
+        Skelleftea: "Skellefteå",
+        Skondal: "Sköndal",
+        Skovde: "Skövde",
+        Sodertalje: "Södertälje",
+        Sodertorn: "Södertörn",
+        "Sodra Alvsborg": "Södra Älvsborg",
+        Stralsakerhetsmyndigheten: "Strålsäkerhetsmyndigheten",
+        Stromstad: "Strömstad",
+        Tjarno: "Tjärnö",
+        Trollhattan: "Trollhättan",
+        Tromso: "Tromsø",
+        Umea: "Umeå",
+        "Upplands Vasby": "Upplands Väsby",
+        Vardal: "Vårdal",
+        Varmland: "Värmland",
+        Varobacka: "Väröbacka",
+        Vasteras: "Västerås",
+        Vastmanland: "Västmanland",
+        Vaxjo: "Växjö"
+        };
 
     for (const [from, to] of Object.entries(replacements)) {
         text = text.replaceAll(from, to);
