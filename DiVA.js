@@ -306,6 +306,7 @@ var monkey_config = {
         .replace(/[\u201C\u201D\u201E\u201F\u2033\u2034\u2036\u2037]/g, '"')
         .replace(/^[;:,]+\s*/g, "")
         .replace(/([;:,])\1+/g, "$1")
+        .replace(/\.;/g, ";")
         .replace(/\s*([;:,])\s*/g, "$1 ")
         .trim();
    }
